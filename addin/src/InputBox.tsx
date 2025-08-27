@@ -1,26 +1,29 @@
 import React, { useState, useRef } from 'react';
+import { InputBoxProps } from './types';
 
-const InputBox = ({ onSendMessage, disabled }) => {
-  const [message, setMessage] = useState('');
-  const textareaRef = useRef(null);
+const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled }) => {
+  const [message, setMessage] = useState<string>('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (message.trim() && !disabled) {
       onSendMessage(message);
       setMessage('');
-      textareaRef.current.style.height = '40px';
+      if (textareaRef.current) {
+        textareaRef.current.style.height = '40px';
+      }
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      handleSubmit(e as unknown as React.FormEvent<HTMLFormElement>);
     }
   };
 
-  const handleTextareaChange = (e) => {
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
     setMessage(e.target.value);
     
     const textarea = e.target;
@@ -41,7 +44,7 @@ const InputBox = ({ onSendMessage, disabled }) => {
             onKeyDown={handleKeyDown}
             placeholder="Type your message... (Shift+Enter for new line)"
             disabled={disabled}
-            rows="1"
+            rows={1}
           />
           <button 
             type="submit" 

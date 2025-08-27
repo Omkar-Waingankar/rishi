@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
+import { MessageListProps } from './types';
 
-const MessageList = ({ messages, isLoading }) => {
-  const messagesEndRef = useRef(null);
+const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -11,7 +12,7 @@ const MessageList = ({ messages, isLoading }) => {
     scrollToBottom();
   }, [messages, isLoading]);
 
-  const formatTime = (timestamp) => {
+  const formatTime = (timestamp: Date): string => {
     return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 

@@ -1,17 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import MessageList from './MessageList';
 import InputBox from './InputBox';
+import { Message, ChatResponse } from './types';
 
-const ChatApp = () => {
-  const [messages, setMessages] = useState([
+const ChatApp: React.FC = () => {
+  const [messages, setMessages] = useState<Message[]>([
     { id: 1, text: "Hello! I'm your AI assistant. How can I help you today?", sender: 'assistant', timestamp: new Date() }
   ]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const handleSendMessage = async (messageText) => {
+  const handleSendMessage = async (messageText: string): Promise<void> => {
     if (!messageText.trim()) return;
 
-    const userMessage = {
+    const userMessage: Message = {
       id: Date.now(),
       text: messageText,
       sender: 'user',
@@ -35,11 +36,14 @@ const ChatApp = () => {
       }
 
       // Handle streaming response
+      if (!response.body) {
+        throw new Error('Response body is null');
+      }
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantResponse = '';
 
-      const assistantMessage = {
+      const assistantMessage: Message = {
         id: Date.now() + 1,
         text: '',
         sender: 'assistant',
@@ -57,7 +61,7 @@ const ChatApp = () => {
         
         for (const line of lines) {
           try {
-            const data = JSON.parse(line);
+            const data: ChatResponse = JSON.parse(line);
             if (data.text) {
               assistantResponse += data.text;
               setMessages(prev => prev.map(msg => 
@@ -73,7 +77,7 @@ const ChatApp = () => {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      const errorMessage = {
+      const errorMessage: Message = {
         id: Date.now() + 1,
         text: "Sorry, I couldn't connect to the backend. Please make sure the daemon is running on port 8080.",
         sender: 'assistant',
