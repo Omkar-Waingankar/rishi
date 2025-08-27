@@ -46,45 +46,53 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
       aria-label="Chat conversation"
       aria-live="polite"
     >
-      {messages.map((message) => (
-        <div key={message.id} className={`message ${message.sender}`} role="article">
-          <div className="message-content">
-            <div className="message-text" aria-label={`${message.sender} message`}>{message.text}</div>
-            <div className="message-time">{formatTime(message.timestamp)}</div>
-          </div>
-          <div className="message-actions" role="toolbar" aria-label="Message actions">
-            {message.sender === 'assistant' && (
-              <button 
-                className="action-button primary"
-                onClick={handleReviewChanges}
-                aria-label="Review changes"
-              >
-                Review changes
-              </button>
+      {messages.map((message, index) => {
+        // Only show footer for assistant messages when not currently loading
+        // or if it's not the most recent assistant message
+        const isLastAssistantMessage = message.sender === 'assistant' && 
+          index === messages.length - 1;
+        const showFooter = message.sender === 'assistant' && 
+          (!isLoading || !isLastAssistantMessage);
+        
+        return (
+          <div key={message.id} className={`message ${message.sender}`} role="article">
+            <div className="message-content">
+              <div className="message-text" aria-label={`${message.sender} message`}>{message.text}</div>
+            </div>
+            {showFooter && (
+              <div className="message-actions" role="toolbar" aria-label="Message actions">
+                <button 
+                  className="action-button primary"
+                  onClick={handleReviewChanges}
+                  aria-label="Review changes"
+                >
+                  Review changes
+                </button>
+                <button 
+                  className="action-button"
+                  onClick={() => copyToClipboard(message.text)}
+                  aria-label="Copy message"
+                >
+                  <span className="action-button-icon">📋</span>
+                  Copy
+                </button>
+                <button 
+                  className="action-button"
+                  aria-label="Like message"
+                >
+                  <span className="action-button-icon">👍</span>
+                </button>
+                <button 
+                  className="action-button"
+                  aria-label="Dislike message"
+                >
+                  <span className="action-button-icon">👎</span>
+                </button>
+              </div>
             )}
-            <button 
-              className="action-button"
-              onClick={() => copyToClipboard(message.text)}
-              aria-label="Copy message"
-            >
-              <span className="action-button-icon">📋</span>
-              Copy
-            </button>
-            <button 
-              className="action-button"
-              aria-label="Like message"
-            >
-              <span className="action-button-icon">👍</span>
-            </button>
-            <button 
-              className="action-button"
-              aria-label="Dislike message"
-            >
-              <span className="action-button-icon">👎</span>
-            </button>
           </div>
-        </div>
-      ))}
+        );
+      })}
       {isLoading && (
         <div className="message assistant">
           <div className="message-content">
