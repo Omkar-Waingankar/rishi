@@ -93,6 +93,7 @@ const ChatApp: React.FC = () => {
     <div className="chat-app">
       <div className="chat-header">
         <h2>Tibbl</h2>
+        <span className="preview-badge">Preview</span>
       </div>
       <MessageList messages={messages} isLoading={isLoading} />
       <InputBox onSendMessage={handleSendMessage} disabled={isLoading} />
