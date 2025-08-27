@@ -1,10 +1,11 @@
-module github.com/rstudio-ai-server/ragent
+module github.com/halliday/tibbl/daemon
 
 go 1.23.1
 
 require (
 	github.com/anthropics/anthropic-sdk-go v1.9.1
 	github.com/go-chi/chi/v5 v5.0.12
+	github.com/invopop/jsonschema v0.13.0
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/rs/zerolog v1.34.0
@@ -13,7 +14,6 @@ require (
 require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
-	github.com/invopop/jsonschema v0.13.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect

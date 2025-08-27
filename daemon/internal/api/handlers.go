@@ -45,7 +45,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// System prompt for RStudio-embedded coding agent (chat now; agentic tools soon)
-	systemPrompt := `You are RStudio AI — an embedded coding copilot inside RStudio (think "Cursor for R").
+	systemPrompt := `You are Tibbl — an embedded coding copilot inside RStudio (think "Cursor for R").
 
 	PRIMARY PURPOSE
 	- Help users write, debug, refactor, and understand code with a focus on R and the RStudio workflow. Also assist with Python-in-RStudio, Quarto/R Markdown, Shiny, SQL, data science, and package development.

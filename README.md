@@ -12,7 +12,7 @@
    make run-server
    ```
    The daemon will run on port 8080.
-4. Build and install the RStudio add-in:
+4. Build and install the Tibbl add-in:
    ```bash
    make install-addin
    ```
@@ -24,7 +24,7 @@
 ## Repository Structure
 
 - **addin/**  
-  Contains the RStudio add-in source code, including the React frontend and R integration.
+  Contains the Tibbl add-in source code, including the React frontend and R integration.
 
 - **daemon/**  
   Contains an HTTP backend server that provides AI chat functionality via Anthropic's Claude API. The backend runs on port 8080 and is integrated with the add-in.

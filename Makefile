@@ -1,8 +1,8 @@
-# Makefile for rstudio-ai-server and RStudio add-in
+# Makefile for Tibbl add-in with local daemon backend
 
 GO := go
-BINARY := daemon/bin/ragent-server
-CMD_DIR := ./daemon/cmd/server
+BINARY := daemon/bin/tibbl-daemon
+CMD_DIR := ./cmd/server
 ADDIN_DIR := ./addin
 
 .PHONY: all build-server run-server start-server clean-server tidy-server fmt-server test-server install-addin build-addin addin-deps addin-dev r-deps
@@ -11,14 +11,14 @@ all: build-server
 
 build-server:
 	mkdir -p $(dir $(BINARY))
-	$(GO) build -o $(BINARY) $(CMD_DIR)
+	cd daemon && $(GO) build -o ../$(BINARY) $(CMD_DIR)
 
 run-server:
 	@echo "Starting server"
-	$(GO) run $(CMD_DIR)
+	cd daemon && $(GO) run $(CMD_DIR)
 
-# Run the compiled binary (requires `make build` first)
-start-server: build
+# Run the compiled binary (requires `make build-server` first)
+start-server: build-server
 	@echo "Starting binary"
 	./$(BINARY)
 
@@ -26,13 +26,13 @@ clean-server:
 	rm -f $(BINARY)
 
 tidy-server:
-	$(GO) mod tidy
+	cd daemon && $(GO) mod tidy
 
 fmt-server:
-	$(GO) fmt ./...
+	cd daemon && $(GO) fmt ./...
 
 test-server:
-	$(GO) test ./...
+	cd daemon && $(GO) test ./...
 
 # Add-in targets
 r-deps:

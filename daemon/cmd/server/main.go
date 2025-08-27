@@ -12,13 +12,12 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/rstudio-ai-server/ragent/internal/api"
+	"github.com/halliday/tibbl/daemon/internal/api"
 )
 
 type Config struct {
 	AnthropicAPIKey string `envconfig:"ANTHROPIC_API_KEY" required:"true"`
-	HTTPPort        string `envconfig:"HTTP_PORT" default:"8090"`
-	RStudioURL      string `envconfig:"RSTUDIO_URL" default:"http://127.0.0.1:8787"`
+	HTTPPort        string `envconfig:"HTTP_PORT" default:"8080"`
 }
 
 func main() {
@@ -40,7 +39,7 @@ func main() {
 	)
 
 	// Build and start HTTP API server
-	srv := api.NewServerClient(anthropicClient, cfg.RStudioURL)
+	srv := api.NewServerClient(anthropicClient)
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf(":%s", cfg.HTTPPort),
 		Handler:           srv.Routes(),

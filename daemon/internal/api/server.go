@@ -7,16 +7,14 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// ServerClient hosts HTTP endpoints for the R-Agent backend.
+// ServerClient hosts HTTP endpoints for the Tibbl backend.
 type ServerClient struct {
 	anthropicClient anthropic.Client
-	rstudioURL      string
 }
 
-func NewServerClient(anthropicClient anthropic.Client, rstudioURL string) *ServerClient {
+func NewServerClient(anthropicClient anthropic.Client) *ServerClient {
 	return &ServerClient{
 		anthropicClient: anthropicClient,
-		rstudioURL:      rstudioURL,
 	}
 }
 
