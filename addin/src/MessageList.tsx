@@ -5,26 +5,17 @@ import { MessageListProps } from './types';
 
 const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleScroll = () => {
-    if (messageListRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = messageListRef.current;
-      const isScrolledUp = scrollHeight - scrollTop - clientHeight > 100;
-      setShowJumpToLatest(isScrolledUp);
-    }
-  };
+
 
   useEffect(() => {
-    if (!showJumpToLatest) {
-      scrollToBottom();
-    }
-  }, [messages, isLoading, showJumpToLatest]);
+    scrollToBottom();
+  }, [messages, isLoading]);
 
   const formatTime = (timestamp: Date): string => {
     return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -42,8 +33,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
   return (
     <div 
       className="message-list" 
-      ref={messageListRef} 
-      onScroll={handleScroll}
+      ref={messageListRef}
       role="log"
       aria-label="Chat conversation"
       aria-live="polite"
@@ -195,18 +185,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
           </div>
         </div>
       )}
-      {showJumpToLatest && (
-        <button 
-          className="jump-to-latest"
-          onClick={() => {
-            setShowJumpToLatest(false);
-            scrollToBottom();
-          }}
-          aria-label="Jump to latest message"
-        >
-          Jump to latest
-        </button>
-      )}
+
       <div ref={messagesEndRef} />
     </div>
   );

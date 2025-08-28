@@ -18,7 +18,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled }) => {
       onSendMessage(message);
       setMessage('');
       if (textareaRef.current) {
-        textareaRef.current.style.height = '18px';
+        textareaRef.current.style.height = '24px';
       }
     }
   };
@@ -34,9 +34,9 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled }) => {
     setMessage(e.target.value);
     
     const textarea = e.target;
-    textarea.style.height = '18px';
+    textarea.style.height = '24px';
     const scrollHeight = textarea.scrollHeight;
-    const maxHeight = 100;
+    const maxHeight = 120;
     textarea.style.height = Math.min(scrollHeight, maxHeight) + 'px';
   };
 
@@ -69,7 +69,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled }) => {
               value={message}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
-              placeholder="Message Tibbl..."
+              placeholder="Plan, build, analyze anything"
               disabled={disabled}
               rows={1}
             />

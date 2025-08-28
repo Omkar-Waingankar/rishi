@@ -5,7 +5,12 @@ import { Message, ChatResponse } from './types';
 
 const ChatApp: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
-    { id: 1, text: "Hello! I'm your AI assistant. How can I help you today?", sender: 'assistant', timestamp: new Date() }
+    { 
+      id: 1, 
+      text: "👋 Hi, I'm Tibbl — your AI assistant for RStudio. Ask me anything about R, code, data, or your project. How can I assist you today?", 
+      sender: 'assistant', 
+      timestamp: new Date() 
+    }
   ]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -79,7 +84,7 @@ const ChatApp: React.FC = () => {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
         id: Date.now() + 1,
-        text: "Sorry, I couldn't connect to the backend. Please make sure the daemon is running on port 8080.",
+        text: "Could not connect to our server. Please wait or restart Tibbl and try again.",
         sender: 'assistant',
         timestamp: new Date(),
         type: 'error'
