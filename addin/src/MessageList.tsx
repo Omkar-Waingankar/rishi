@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { MessageListProps } from './types';
 
 const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
@@ -57,17 +59,97 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
         return (
           <div key={message.id} className={`message ${message.sender}${message.type ? ` ${message.type}` : ''}`} role="article">
             <div className="message-content">
-              <div className="message-text" aria-label={`${message.sender} message`}>{message.text}</div>
+              <div className="message-text" aria-label={`${message.sender} message`}>
+                {message.sender === 'assistant' ? (
+                  <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                      code: ({ node, inline, className, children, ...props }: any) => {
+                        if (inline) {
+                          return (
+                            <code className="inline-code" {...props}>
+                              {children}
+                            </code>
+                          );
+                        }
+                        
+                        // Extract language from className (e.g., "language-javascript" -> "javascript")
+                        let language = '';
+                        if (className && className.includes('language-')) {
+                          language = className.replace('language-', '');
+                        }
+                        
+                        // Fallback: try to detect language from content patterns
+                        const codeContent = String(children || '').toLowerCase();
+                        if (!language) {
+                          if (codeContent.includes('function(') || codeContent.includes('<-') || codeContent.includes('print(')) {
+                            language = 'r';
+                          } else if (codeContent.includes('def ') || codeContent.includes('import ')) {
+                            language = 'python';
+                          } else if (codeContent.includes('function ') || codeContent.includes('const ') || codeContent.includes('console.log')) {
+                            language = 'javascript';
+                          }
+                        }
+                        
+                        const displayLanguage = language || 'text';
+                        
+                        return (
+                          <code className="code-block-inner" data-language={displayLanguage} {...props}>
+                            {children}
+                          </code>
+                        );
+                      },
+                      pre: ({ children }: any) => {
+                        // Extract language from the code element inside
+                        const codeElement = React.Children.toArray(children)[0] as any;
+                        
+                        // Try multiple ways to get the language
+                        let language = codeElement?.props?.['data-language'] || '';
+                        
+                        // If data-language isn't set, try to extract from className
+                        if (!language && codeElement?.props?.className) {
+                          const className = codeElement.props.className;
+                          if (className.includes('language-')) {
+                            language = className.replace('language-', '');
+                          }
+                        }
+                        
+                        // Fallback to content-based detection
+                        if (!language) {
+                          const codeContent = String(codeElement?.props?.children || '').toLowerCase();
+                          if (codeContent.includes('function(') || codeContent.includes('<-') || codeContent.includes('print(')) {
+                            language = 'r';
+                          } else if (codeContent.includes('def ') || codeContent.includes('import ')) {
+                            language = 'python';
+                          } else if (codeContent.includes('function ') || codeContent.includes('const ') || codeContent.includes('console.log')) {
+                            language = 'javascript';
+                          }
+                        }
+                        
+                        const displayLanguage = language || 'plaintext';
+                        
+                        return (
+                          <div className="code-block-container">
+                            <div className="code-block-header">
+                              <span className="code-language">{displayLanguage}</span>
+                            </div>
+                            <pre className="code-block">
+                              {children}
+                            </pre>
+                          </div>
+                        );
+                      },
+                    }}
+                  >
+                    {message.text}
+                  </ReactMarkdown>
+                ) : (
+                  message.text
+                )}
+              </div>
             </div>
             {showFooter && (
               <div className="message-actions" role="toolbar" aria-label="Message actions">
-                <button 
-                  className="action-button primary"
-                  onClick={handleReviewChanges}
-                  aria-label="Review changes"
-                >
-                  Review changes
-                </button>
                 <button 
                   className="action-button"
                   onClick={() => copyToClipboard(message.text)}

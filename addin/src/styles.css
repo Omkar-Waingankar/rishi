@@ -29,15 +29,15 @@
 .chat-header {
   background-color: var(--bg-secondary);
   border-bottom: 1px solid var(--border-light);
-  padding: 16px 20px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .chat-header h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -45,22 +45,22 @@
 .chat-header .preview-badge {
   background-color: var(--accent-violet);
   color: white;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 /* Message List */
 .message-list {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 /* Assistant Message - Prose Style */
@@ -80,24 +80,172 @@
   max-width: none;
 }
 
+/* Markdown styles for assistant messages */
 .message.assistant .message-text {
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--text-primary);
-  white-space: pre-wrap;
   margin: 0;
 }
 
-/* Code blocks within assistant messages */
+/* Markdown headings */
+.message.assistant h1,
+.message.assistant h2,
+.message.assistant h3,
+.message.assistant h4,
+.message.assistant h5,
+.message.assistant h6 {
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.message.assistant h1 { font-size: 18px; }
+.message.assistant h2 { font-size: 16px; }
+.message.assistant h3 { font-size: 14px; }
+.message.assistant h4 { font-size: 13px; }
+.message.assistant h5 { font-size: 12px; }
+.message.assistant h6 { font-size: 12px; }
+
+/* Markdown paragraphs */
+.message.assistant p {
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+.message.assistant p:first-child {
+  margin-top: 0;
+}
+
+.message.assistant p:last-child {
+  margin-bottom: 0;
+}
+
+/* Markdown lists */
+.message.assistant ul,
+.message.assistant ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.message.assistant li {
+  margin: 2px 0;
+  line-height: 1.4;
+}
+
+/* Markdown blockquotes */
+.message.assistant blockquote {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--accent-violet);
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Inline code */
+.message.assistant .inline-code {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+}
+
+/* Code blocks */
+.message.assistant .code-block-container {
+  margin: 10px 0;
+  border: 1px solid #333;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  background-color: #1a1a1a;
+}
+
+.message.assistant .code-block-header {
+  background-color: #2a2a2a;
+  border-bottom: 1px solid #333;
+  padding: 6px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.message.assistant .code-language {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 500;
+  color: #888;
+  text-transform: lowercase;
+}
+
 .message.assistant .code-block {
   background-color: #1a1a1a;
   color: #e1e1e1;
-  padding: 16px;
-  border-radius: var(--border-radius-sm);
+  padding: 12px;
+  border-radius: 0;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 11px;
   overflow-x: auto;
+  margin: 0;
+  border: none;
+}
+
+.message.assistant .code-block-inner {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+  font-family: inherit;
+}
+
+/* Markdown tables */
+.message.assistant table {
+  border-collapse: collapse;
   margin: 12px 0;
+  width: 100%;
+  font-size: 12px;
+}
+
+.message.assistant th,
+.message.assistant td {
+  border: 1px solid var(--border-light);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.message.assistant th {
+  background-color: var(--bg-primary);
+  font-weight: 600;
+}
+
+/* Markdown links */
+.message.assistant a {
+  color: var(--accent-violet);
+  text-decoration: none;
+}
+
+.message.assistant a:hover {
+  text-decoration: underline;
+}
+
+/* Horizontal rules */
+.message.assistant hr {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 16px 0;
+}
+
+/* Strong and emphasis */
+.message.assistant strong {
+  font-weight: 600;
+}
+
+.message.assistant em {
+  font-style: italic;
 }
 
 /* User Message - Card Style */
@@ -110,13 +258,13 @@
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-light);
   border-radius: var(--border-radius);
-  padding: 16px;
+  padding: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .message.user .message-text {
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.4;
   color: var(--text-primary);
   margin: 0;
   white-space: pre-wrap;
@@ -189,20 +337,21 @@
 .message-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 6px;
   opacity: 1;
 }
 
 .action-button {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: 3px;
+  padding: 3px 6px;
   background: transparent;
   border: 1px solid var(--border-light);
-  border-radius: 12px;
-  font-size: 11px;
+  border-radius: 8px;
+  font-size: 10px;
   font-weight: 400;
   color: var(--text-secondary);
   cursor: pointer;
@@ -228,9 +377,9 @@
 }
 
 .action-button-icon {
-  width: 12px;
-  height: 12px;
-  font-size: 12px;
+  width: 10px;
+  height: 10px;
+  font-size: 10px;
 }
 
 /* Typing Indicator */
@@ -272,7 +421,7 @@
 .input-box {
   background-color: var(--bg-secondary);
   border-top: 1px solid var(--border-light);
-  padding: 8px 12px;
+  padding: 6px 10px;
 }
 
 .input-container {
@@ -280,9 +429,9 @@
   flex-direction: column;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-light);
-  border-radius: 16px;
-  padding: 6px;
-  gap: 6px;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -329,13 +478,13 @@
   border: none;
   outline: none;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-primary);
   resize: none;
-  min-height: 18px;
-  max-height: 100px;
-  padding: 6px 4px;
-  line-height: 1.4;
+  min-height: 16px;
+  max-height: 80px;
+  padding: 4px 3px;
+  line-height: 1.3;
 }
 
 .input-text-section textarea::placeholder {
