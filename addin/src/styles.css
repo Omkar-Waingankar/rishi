@@ -42,16 +42,7 @@
   color: var(--text-primary);
 }
 
-.chat-header .preview-badge {
-  background-color: var(--accent-violet);
-  color: white;
-  font-size: 10px;
-  font-weight: 500;
-  padding: 3px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
+
 
 /* Message List */
 .message-list {
@@ -346,23 +337,33 @@
 .action-button {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 3px 6px;
+  gap: 4px;
   background: transparent;
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  font-size: 10px;
+  border: none;
+  font-size: 11px;
   font-weight: 400;
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
   text-decoration: none;
+  border-radius: 4px;
+  padding: 4px 6px;
 }
 
 .action-button:hover {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  border-color: var(--text-secondary);
+  color: var(--accent-violet);
+}
+
+.action-button.copy-button {
+  padding: 4px 8px;
+}
+
+.action-button.thumb-button {
+  padding: 4px;
+}
+
+.action-icon {
+  flex-shrink: 0;
 }
 
 .action-button.primary {
@@ -376,11 +377,7 @@
   border-color: #8A47D1;
 }
 
-.action-button-icon {
-  width: 10px;
-  height: 10px;
-  font-size: 10px;
-}
+
 
 /* Typing Indicator */
 .typing-indicator {
@@ -451,25 +448,102 @@
   gap: 8px;
 }
 
-.model-dropdown {
+/* Custom Dropdown */
+.custom-dropdown {
+  position: relative;
+  z-index: 100;
+}
+
+.dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   background: transparent;
-  border: none;
+  border: 1px solid var(--border-light);
   padding: 4px 8px;
   font-size: 11px;
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.dropdown-trigger:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--text-secondary);
+}
+
+.dropdown-trigger:focus {
+  outline: none;
+  background-color: var(--bg-secondary);
+  border-color: var(--accent-violet);
+  box-shadow: 0 0 0 2px rgba(155, 81, 224, 0.1);
+}
+
+.dropdown-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dropdown-value {
+  flex: 1;
+  text-align: left;
+}
+
+.dropdown-arrow {
+  color: var(--text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.dropdown-trigger.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.dropdown-option {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
-.model-dropdown:hover {
-  background-color: var(--bg-secondary);
+.dropdown-option:hover {
+  background-color: var(--bg-primary);
 }
 
-.model-dropdown:focus {
-  outline: none;
-  background-color: var(--bg-secondary);
+.dropdown-option.selected {
+  background-color: var(--accent-violet);
+  color: white;
+}
+
+.dropdown-option:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.dropdown-option:last-child {
+  border-radius: 0 0 8px 8px;
 }
 
 .input-text-section textarea {
@@ -571,7 +645,7 @@
 
 /* Accessibility & Focus States */
 .action-button:focus,
-.model-dropdown:focus,
+.dropdown-trigger:focus,
 .send-button:focus {
   outline: 2px solid var(--accent-violet);
   outline-offset: 2px;

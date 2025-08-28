@@ -1,5 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { InputBoxProps } from './types';
+import ModelDropdown from './ModelDropdown';
+
+interface DropdownOption {
+  value: string;
+  label: string;
+}
 
 const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled }) => {
   const [message, setMessage] = useState<string>('');
@@ -34,10 +40,16 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled }) => {
     textarea.style.height = Math.min(scrollHeight, maxHeight) + 'px';
   };
 
-  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
-    setSelectedModel(e.target.value);
-    localStorage.setItem('selectedModel', e.target.value);
+  const handleModelChange = (value: string): void => {
+    setSelectedModel(value);
+    localStorage.setItem('selectedModel', value);
   };
+
+  const modelOptions: DropdownOption[] = [
+    { value: 'claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' },
+    { value: 'claude-3-haiku', label: 'Claude 3 Haiku' },
+    { value: 'gpt-4', label: 'GPT-4' }
+  ];
 
   // Load saved model preference on component mount
   React.useEffect(() => {
@@ -64,17 +76,12 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled }) => {
           </div>
           
           <div className="input-footer">
-            <select 
-              className="model-dropdown"
+            <ModelDropdown
               value={selectedModel}
               onChange={handleModelChange}
               disabled={disabled}
-              aria-label="Select AI model"
-            >
-              <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
-              <option value="claude-3-haiku">Claude 3 Haiku</option>
-              <option value="gpt-4">GPT-4</option>
-            </select>
+              options={modelOptions}
+            />
             
             <button 
               type="submit" 
