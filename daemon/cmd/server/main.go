@@ -8,16 +8,17 @@ import (
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
+	"github.com/halliday/tibbl/daemon/internal/api"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/halliday/tibbl/daemon/internal/api"
 )
 
 type Config struct {
 	AnthropicAPIKey string `envconfig:"ANTHROPIC_API_KEY" required:"true"`
 	HTTPPort        string `envconfig:"HTTP_PORT" default:"8080"`
+	ToolRPCToken    string `envconfig:"TOOL_RPC_TOKEN" required:"true"`
 }
 
 func main() {
@@ -39,7 +40,7 @@ func main() {
 	)
 
 	// Build and start HTTP API server
-	srv := api.NewServerClient(anthropicClient)
+	srv := api.NewServerClient(anthropicClient, cfg.ToolRPCToken)
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf(":%s", cfg.HTTPPort),
 		Handler:           srv.Routes(),

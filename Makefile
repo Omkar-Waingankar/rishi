@@ -38,7 +38,7 @@ test-server:
 r-deps:
 	@echo "Installing R package dependencies"
 	@if command -v R >/dev/null 2>&1; then \
-		R -e "install.packages(c('rstudioapi', 'httpuv', 'tools'), repos='https://cran.rstudio.com/')"; \
+		R -e "install.packages(c('rstudioapi', 'httpuv', 'tools', 'plumber', 'jsonlite'), repos='https://cran.rstudio.com/')"; \
 	else \
 		echo "Error: R is not installed or not in PATH"; \
 		exit 1; \

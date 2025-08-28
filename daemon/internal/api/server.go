@@ -10,11 +10,13 @@ import (
 // ServerClient hosts HTTP endpoints for the Tibbl backend.
 type ServerClient struct {
 	anthropicClient anthropic.Client
+	toolRPCToken    string
 }
 
-func NewServerClient(anthropicClient anthropic.Client) *ServerClient {
+func NewServerClient(anthropicClient anthropic.Client, toolRPCToken string) *ServerClient {
 	return &ServerClient{
 		anthropicClient: anthropicClient,
+		toolRPCToken:    toolRPCToken,
 	}
 }
 

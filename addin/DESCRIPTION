@@ -12,7 +12,9 @@ RoxygenNote: 7.0.0
 Imports:
     rstudioapi,
     httpuv,
-    tools
+    tools,
+    plumber,
+    jsonlite
 Suggests:
     knitr,
     rmarkdown

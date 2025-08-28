@@ -113,11 +113,6 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		msgs = append(msgs, anthropic.NewUserMessage(anthropic.NewTextBlock(in.Message)))
 	}
 
-	// Log the incoming chat history and message for debugging/audit purposes
-	// (Redact content if needed for privacy in production)
-	log.Info().Msgf("handleChat: model=%q, max_tokens=%d, history_len=%d, messages=%v, latest_message=%q",
-		in.Model, in.MaxTok, len(in.History), in.History, in.Message)
-
 	// Start streaming with the official Anthropic SDK
 	model := anthropic.ModelClaudeSonnet4_20250514
 	if in.Model != "" {
@@ -139,12 +134,6 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for {
-		for idx, msg := range msgs {
-			fmt.Printf("Message %d OfText: %+v\n", idx, msg.Content[0].OfText)
-			fmt.Printf("Message %d OfToolUse: %+v\n", idx, msg.Content[0].OfToolUse)
-			fmt.Printf("Message %d OfToolResult: %+v\n", idx, msg.Content[0].OfToolResult)
-		}
-
 		stream := s.anthropicClient.Messages.NewStreaming(r.Context(), anthropic.MessageNewParams{
 			Model:     model,
 			MaxTokens: int64(maxTokens),
@@ -186,7 +175,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						http.Error(w, "invalid tool input", http.StatusBadRequest)
 						return
 					}
-					
+
 					// Make HTTP call to RStudio frontend to read file
 					readResult, err := s.readFileFromRStudio(input.Path)
 					if err != nil {
@@ -198,15 +187,27 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						response = *readResult
 					}
 				case "list_files":
-					// Make HTTP call to RStudio frontend to list files
-					listResult, err := s.listFilesFromRStudio()
-					if err != nil {
-						log.Error().Err(err).Msg("Failed to list files from RStudio frontend")
+					var input ListFilesToolInput
+					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
+						log.Error().Err(err).Msg("Failed to parse list_files input")
 						response = ListFilesToolResult{
-							Objects: []ListFilesToolResultObj{},
+							Objects: []ListFilesToolResultObj{
+								{Path: "Error: Invalid input", IsDir: false},
+							},
 						}
 					} else {
-						response = *listResult
+						// Make HTTP call to RStudio frontend to list files
+						listResult, err := s.listFilesFromRStudio(input.Path)
+						if err != nil {
+							log.Error().Err(err).Msg("Failed to list files from RStudio frontend")
+							response = ListFilesToolResult{
+								Objects: []ListFilesToolResultObj{
+									{Path: fmt.Sprintf("Error: %v", err), IsDir: false},
+								},
+							}
+						} else {
+							response = *listResult
+						}
 					}
 				}
 
