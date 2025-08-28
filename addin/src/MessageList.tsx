@@ -55,7 +55,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
           (!isLoading || !isLastAssistantMessage);
         
         return (
-          <div key={message.id} className={`message ${message.sender}`} role="article">
+          <div key={message.id} className={`message ${message.sender}${message.type ? ` ${message.type}` : ''}`} role="article">
             <div className="message-content">
               <div className="message-text" aria-label={`${message.sender} message`}>{message.text}</div>
             </div>

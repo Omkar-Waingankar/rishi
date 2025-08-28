@@ -122,6 +122,69 @@
   white-space: pre-wrap;
 }
 
+/* Error and Warning Messages */
+.message.error .message-content {
+  background: rgba(248, 113, 113, 0.08) !important;
+  border: 1px solid rgba(248, 113, 113, 0.2) !important;
+  border-radius: 12px !important;
+  position: relative;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.06) !important;
+  padding: 20px !important;
+}
+
+.message.error .message-content::before {
+  content: "✕";
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 14px;
+  color: #EF4444;
+  font-weight: 600;
+}
+
+.message.error .message-text {
+  color: #B91C1C !important;
+  margin-left: 28px !important;
+  font-weight: 450;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.message.warning .message-content {
+  background: rgba(251, 191, 36, 0.08) !important;
+  border: 1px solid rgba(251, 191, 36, 0.2) !important;
+  border-radius: 12px !important;
+  position: relative;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.06) !important;
+  padding: 20px !important;
+}
+
+.message.warning .message-content::before {
+  content: "⚠";
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 14px;
+  color: #F59E0B;
+  font-weight: 600;
+}
+
+.message.warning .message-text {
+  color: #92400E !important;
+  margin-left: 28px !important;
+  font-weight: 450;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Hide message actions for error and warning messages */
+.message.error .message-actions,
+.message.warning .message-actions {
+  display: none;
+}
+
 /* Message Actions Row */
 .message-actions {
   display: flex;

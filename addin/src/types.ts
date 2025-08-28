@@ -3,6 +3,7 @@ export interface Message {
   text: string;
   sender: 'user' | 'assistant';
   timestamp: Date;
+  type?: 'normal' | 'error' | 'warning';
 }
 
 export interface InputBoxProps {

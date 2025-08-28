@@ -81,7 +81,8 @@ const ChatApp: React.FC = () => {
         id: Date.now() + 1,
         text: "Sorry, I couldn't connect to the backend. Please make sure the daemon is running on port 8080.",
         sender: 'assistant',
-        timestamp: new Date()
+        timestamp: new Date(),
+        type: 'error'
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {

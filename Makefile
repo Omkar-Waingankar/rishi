@@ -5,7 +5,7 @@ BINARY := daemon/bin/tibbl-daemon
 CMD_DIR := ./cmd/server
 ADDIN_DIR := ./addin
 
-.PHONY: all build-server run-server start-server clean-server tidy-server fmt-server test-server install-addin build-addin addin-deps addin-dev r-deps
+.PHONY: all build-server run-server start-server clean-server tidy-server fmt-server test-server install-addin build-addin addin-deps addin-dev r-deps install-and-launch-addin
 
 all: build-server
 
@@ -69,6 +69,20 @@ clean-addin:
 	@echo "Cleaning add-in build artifacts"
 	rm -rf $(ADDIN_DIR)/node_modules
 	rm -f $(ADDIN_DIR)/inst/www/chat-app.js
+
+# Install add-in and launch RStudio
+install-and-launch-addin: install-addin
+	@echo "Launching RStudio..."
+	@if command -v rstudio >/dev/null 2>&1; then \
+		rstudio & \
+	elif [ -f "/Applications/RStudio.app/Contents/MacOS/RStudio" ]; then \
+		open -a RStudio; \
+	elif command -v open >/dev/null 2>&1 && [ -d "/Applications/RStudio.app" ]; then \
+		open /Applications/RStudio.app; \
+	else \
+		echo "Error: RStudio not found. Please install RStudio or add it to your PATH"; \
+		exit 1; \
+	fi
 
 clean: clean-addin
 	rm -f $(BINARY)
