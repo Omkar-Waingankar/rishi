@@ -9,6 +9,7 @@ export interface Message {
 export interface InputBoxProps {
   onSendMessage: (message: string) => void;
   disabled: boolean;
+  onStopStreaming: () => void;
 }
 
 export interface MessageListProps {

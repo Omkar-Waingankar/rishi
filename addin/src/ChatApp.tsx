@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import MessageList from './MessageList';
 import InputBox from './InputBox';
 import { Message, ChatResponse } from './types';
@@ -12,7 +12,8 @@ const ChatApp: React.FC = () => {
       timestamp: new Date() 
     }
   ]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const handleSendMessage = async (messageText: string): Promise<void> => {
     if (!messageText.trim()) return;
@@ -25,7 +26,10 @@ const ChatApp: React.FC = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
+    setIsStreaming(true);
+
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController();
 
     try {
       const response = await fetch('http://localhost:8080/chat', {
@@ -33,7 +37,8 @@ const ChatApp: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: messageText })
+        body: JSON.stringify({ message: messageText }),
+        signal: abortControllerRef.current.signal
       });
 
       if (!response.ok) {
@@ -81,17 +86,29 @@ const ChatApp: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Error sending message:', error);
-      const errorMessage: Message = {
-        id: Date.now() + 1,
-        text: "Could not connect to our server. Please wait or restart Tibbl and try again.",
-        sender: 'assistant',
-        timestamp: new Date(),
-        type: 'error'
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Request was cancelled by user
+        console.log('Request cancelled by user');
+      } else {
+        console.error('Error sending message:', error);
+        const errorMessage: Message = {
+          id: Date.now() + 1,
+          text: "Could not connect to our server. Please wait or restart Tibbl and try again.",
+          sender: 'assistant',
+          timestamp: new Date(),
+          type: 'error'
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
     } finally {
-      setIsLoading(false);
+      setIsStreaming(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleStopStreaming = (): void => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
   };
 
@@ -100,8 +117,12 @@ const ChatApp: React.FC = () => {
       <div className="chat-header">
         <h2>Tibbl</h2>
       </div>
-      <MessageList messages={messages} isLoading={isLoading} />
-      <InputBox onSendMessage={handleSendMessage} disabled={isLoading} />
+      <MessageList messages={messages} isLoading={isStreaming} />
+      <InputBox 
+        onSendMessage={handleSendMessage} 
+        disabled={isStreaming}
+        onStopStreaming={handleStopStreaming}
+      />
     </div>
   );
 };

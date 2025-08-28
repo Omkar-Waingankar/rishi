@@ -7,7 +7,7 @@ interface DropdownOption {
   label: string;
 }
 
-const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled }) => {
+const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, onStopStreaming }) => {
   const [message, setMessage] = useState<string>('');
   const [selectedModel, setSelectedModel] = useState<string>('claude-3.5-sonnet');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -83,22 +83,29 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled }) => {
               options={modelOptions}
             />
             
-            <button 
-              type="submit" 
-              disabled={disabled || !message.trim()}
-              className="send-button"
-              aria-label={disabled ? 'Sending...' : 'Send message'}
-            >
-              {disabled ? (
-                <svg className="send-icon" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="3"/>
+            {disabled ? (
+              <button 
+                type="button"
+                onClick={onStopStreaming}
+                className="send-button stop-button"
+                aria-label="Stop streaming"
+              >
+                <svg className="send-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="6" width="12" height="12" rx="2"/>
                 </svg>
-              ) : (
+              </button>
+            ) : (
+              <button 
+                type="submit" 
+                disabled={disabled || !message.trim()}
+                className="send-button"
+                aria-label="Send message"
+              >
                 <svg className="send-icon" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
                 </svg>
-              )}
-            </button>
+              </button>
+            )}
           </div>
         </div>
       </form>
