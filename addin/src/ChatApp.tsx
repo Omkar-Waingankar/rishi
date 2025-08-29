@@ -33,9 +33,12 @@ const ChatApp: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       id: 1, 
-      text: "👋 Hi, I'm Tibbl — your AI assistant for RStudio. Ask me anything about R, code, data, or your project. How can I assist you today?", 
       sender: 'assistant', 
-      timestamp: new Date() 
+      timestamp: new Date(),
+      content: [{
+        type: 'text',
+        content: "👋 Hi, I'm Tibbl — your AI assistant for RStudio. Ask me anything about R, code, data, or your project. How can I assist you today?"
+      }]
     }
   ]);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
@@ -46,9 +49,12 @@ const ChatApp: React.FC = () => {
 
     const userMessage: Message = {
       id: Date.now(),
-      text: messageText,
       sender: 'user',
-      timestamp: new Date()
+      timestamp: new Date(),
+      content: [{
+        type: 'text',
+        content: messageText
+      }]
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -63,7 +69,7 @@ const ChatApp: React.FC = () => {
         .slice(1) // Skip the initial greeting message
         .map(msg => ({
           role: msg.sender === 'user' ? 'user' : 'assistant',
-          content: msg.text
+          content: msg.content.map(c => c.content).join('')
         }));
 
       const response = await fetch('http://localhost:8080/chat', {
@@ -88,14 +94,13 @@ const ChatApp: React.FC = () => {
       }
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let assistantResponse = '';
       let assistantContent: Array<{type: 'text' | 'tool_call', content: string, toolCall?: any}> = [];
 
       const assistantMessage: Message = {
         id: Date.now() + 1,
-        text: '',
         sender: 'assistant',
-        timestamp: new Date()
+        timestamp: new Date(),
+        content: []
       };
       
       setMessages(prev => [...prev, assistantMessage]);
@@ -111,21 +116,11 @@ const ChatApp: React.FC = () => {
           try {
             const data: ChatResponse = JSON.parse(line);
             if (data.text) {
-              assistantResponse += data.text;
               assistantContent.push({type: 'text', content: data.text});
               
-              // Render mixed content as combined text with tool calls inline
-              const combinedText = assistantContent.map(item => {
-                if (item.type === 'text') {
-                  return item.content;
-                } else {
-                  return `\n\n<div class="inline-tool-call ${item.toolCall?.status}">${getToolCallText(item.toolCall)}</div>\n\n`;
-                }
-              }).join('');
-              
               setMessages(prev => prev.map(msg => 
-                msg.id === assistantMessage.id 
-                  ? { ...msg, text: combinedText }
+                msg.id === assistantMessage.id && 'content' in msg
+                  ? { ...msg, content: [...assistantContent] }
                   : msg
               ));
             } else if (data.tool_call) {
@@ -151,18 +146,9 @@ const ChatApp: React.FC = () => {
                 }
               }
               
-              // Re-render combined content
-              const combinedText = assistantContent.map(item => {
-                if (item.type === 'text') {
-                  return item.content;
-                } else {
-                  return `\n\n<div class="inline-tool-call ${item.toolCall?.status}">${getToolCallText(item.toolCall)}</div>\n\n`;
-                }
-              }).join('');
-              
               setMessages(prev => prev.map(msg => 
-                msg.id === assistantMessage.id 
-                  ? { ...msg, text: combinedText }
+                msg.id === assistantMessage.id && 'content' in msg
+                  ? { ...msg, content: [...assistantContent] }
                   : msg
               ));
             }
@@ -179,10 +165,12 @@ const ChatApp: React.FC = () => {
         console.error('Error sending message:', error);
         const errorMessage: Message = {
           id: Date.now() + 1,
-          text: "Could not connect to our server. Please wait or restart Tibbl and try again.",
           sender: 'assistant',
           timestamp: new Date(),
-          type: 'error'
+          content: [{
+            type: 'error',
+            content: "Could not connect to our server. Please wait or restart Tibbl and try again."
+          }]
         };
         setMessages(prev => [...prev, errorMessage]);
       }

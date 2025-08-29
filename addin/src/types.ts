@@ -1,14 +1,18 @@
-export interface Message {
-  id: number;
-  text: string;
-  sender: 'user' | 'assistant';
-  timestamp: Date;
-  type?: 'normal' | 'error' | 'warning' | 'tool_call';
+interface MessageContent {
+  type: 'text' | 'tool_call' | 'error';
+  content: string;
   toolCall?: {
     name: string;
     status: 'requesting' | 'completed';
     input?: string;
   };
+}
+
+export interface Message {
+  id: number;
+  sender: 'user' | 'assistant';
+  timestamp: Date;
+  content: MessageContent[];
 }
 
 export interface InputBoxProps {
