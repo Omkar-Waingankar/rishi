@@ -44,13 +44,21 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
         const isLastAssistantMessage = message.sender === 'assistant' && 
           index === messages.length - 1;
         const showFooter = message.sender === 'assistant' && 
+          message.type !== 'tool_call' &&
           (!isLoading || !isLastAssistantMessage);
         
         return (
           <div key={message.id} className={`message ${message.sender}${message.type ? ` ${message.type}` : ''}`} role="article">
             <div className="message-content">
               <div className="message-text" aria-label={`${message.sender} message`}>
-                {message.sender === 'assistant' ? (
+                {message.type === 'tool_call' ? (
+                  <div className="tool-call-message">
+                    <span className={`tool-call-status ${message.toolCall?.status}`}>
+                      {message.toolCall?.status === 'requesting' ? '⏳' : '✅'}
+                    </span>
+                    <span className="tool-call-text">{message.text}</span>
+                  </div>
+                ) : message.sender === 'assistant' ? (
                   <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{

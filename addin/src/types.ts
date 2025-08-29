@@ -3,7 +3,12 @@ export interface Message {
   text: string;
   sender: 'user' | 'assistant';
   timestamp: Date;
-  type?: 'normal' | 'error' | 'warning';
+  type?: 'normal' | 'error' | 'warning' | 'tool_call';
+  toolCall?: {
+    name: string;
+    status: 'requesting' | 'completed';
+    input?: string;
+  };
 }
 
 export interface InputBoxProps {
@@ -18,5 +23,11 @@ export interface MessageListProps {
 }
 
 export interface ChatResponse {
-  text: string;
+  text?: string;
+  tool_call?: {
+    name: string;
+    input: string;
+    status: 'requesting' | 'completed';
+  };
+  is_final?: boolean;
 }

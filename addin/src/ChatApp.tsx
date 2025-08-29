@@ -3,6 +3,32 @@ import MessageList from './MessageList';
 import InputBox from './InputBox';
 import { Message, ChatResponse } from './types';
 
+const getToolCallText = (toolCall: { name: string; status: string; input?: string }) => {
+  let filename = '';
+  try {
+    const input = JSON.parse(toolCall.input || '{}');
+    filename = input.path || input.Path || '';
+  } catch {
+    // If parsing fails, just use the raw input
+    filename = toolCall.input || '';
+  }
+
+  switch (toolCall.name) {
+    case 'read_file':
+      return toolCall.status === 'requesting' 
+        ? `Claude asking to read ${filename}`
+        : `Claude has read ${filename}`;
+    case 'list_files':
+      return toolCall.status === 'requesting'
+        ? `Claude asking to list files in ${filename}`
+        : `Claude has listed files in ${filename}`;
+    default:
+      return toolCall.status === 'requesting'
+        ? `Claude asking to use ${toolCall.name}`
+        : `Claude has used ${toolCall.name}`;
+  }
+};
+
 const ChatApp: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     { 
@@ -90,6 +116,29 @@ const ChatApp: React.FC = () => {
                   ? { ...msg, text: assistantResponse }
                   : msg
               ));
+            } else if (data.tool_call) {
+              // Handle tool call messages
+              const toolCallMessage: Message = {
+                id: Date.now() + Math.random(),
+                text: getToolCallText(data.tool_call),
+                sender: 'assistant',
+                timestamp: new Date(),
+                type: 'tool_call',
+                toolCall: data.tool_call
+              };
+              
+              if (data.tool_call.status === 'requesting') {
+                setMessages(prev => [...prev, toolCallMessage]);
+              } else if (data.tool_call.status === 'completed') {
+                // Update the existing tool call message to show completion
+                setMessages(prev => prev.map(msg => 
+                  msg.type === 'tool_call' && 
+                  msg.toolCall?.name === data.tool_call?.name && 
+                  msg.toolCall?.status === 'requesting'
+                    ? { ...msg, text: getToolCallText(data.tool_call!), toolCall: data.tool_call }
+                    : msg
+                ));
+              }
             }
           } catch (e) {
             console.error('Error parsing JSON:', e);

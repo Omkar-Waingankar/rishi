@@ -166,6 +166,16 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 			case anthropic.TextBlock:
 				msgs = append(msgs, anthropic.NewAssistantMessage(anthropic.NewTextBlock(variant.Text)))
 			case anthropic.ToolUseBlock:
+				// Stream tool call start event to frontend
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"tool_call": map[string]any{
+						"name": block.Name,
+						"input": variant.JSON.Input.Raw(),
+						"status": "requesting",
+					},
+				})
+				flusher.Flush()
+
 				var response interface{}
 				switch block.Name {
 				case "read_file":
@@ -216,6 +226,16 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "error parsing tool result", http.StatusInternalServerError)
 					return
 				}
+
+				// Stream tool call completion event to frontend
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"tool_call": map[string]any{
+						"name": block.Name,
+						"input": variant.JSON.Input.Raw(),
+						"status": "completed",
+					},
+				})
+				flusher.Flush()
 
 				log.Info().Msgf("variant.JSON.Input: %v", variant.JSON.Input)
 				msgs = append(msgs, anthropic.NewAssistantMessage(anthropic.NewToolUseBlock(block.ID, variant.JSON.Input, block.Name)))
