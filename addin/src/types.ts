@@ -5,6 +5,7 @@ interface MessageContent {
     name: string;
     status: 'requesting' | 'completed';
     input?: string;
+    result?: string;
   };
 }
 
@@ -32,6 +33,7 @@ export interface ChatResponse {
     name: string;
     input: string;
     status: 'requesting' | 'completed';
+    result?: string;
   };
   is_final?: boolean;
   error?: string;

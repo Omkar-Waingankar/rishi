@@ -99,7 +99,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 	var msgs []anthropic.MessageParam
 	// Prepend system prompt as a message to keep behavior similar
 	msgs = append(msgs, anthropic.NewUserMessage(anthropic.NewTextBlock(systemPrompt)))
-	for _, m := range in.History {
+	for i, m := range in.History {
 		switch m.Role {
 		case "user":
 			msgs = append(msgs, anthropic.NewUserMessage(anthropic.NewTextBlock(m.Content)))
@@ -108,12 +108,13 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		default:
 			// ignore
 		}
+		log.Info().Msgf("history message %d: role %s, content %s", i, m.Role, m.Content[:min(100, len(m.Content))])
 	}
+
 	if in.Message != "" {
 		msgs = append(msgs, anthropic.NewUserMessage(anthropic.NewTextBlock(in.Message)))
 	}
-
-	log.Info().Msgf("user message: %s", in.Message[:min(100, len(in.Message))])
+	log.Info().Msgf("new user message: %s", in.Message[:min(100, len(in.Message))])
 
 	// Start streaming with the official Anthropic SDK
 	model := anthropic.ModelClaudeSonnet4_20250514
@@ -244,6 +245,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						"name":   block.Name,
 						"input":  variant.JSON.Input.Raw(),
 						"status": "completed",
+						"result": string(b),
 					},
 				})
 				flusher.Flush()

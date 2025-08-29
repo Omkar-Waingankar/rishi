@@ -71,12 +71,59 @@ const ChatApp: React.FC = () => {
 
     try {
       // Convert messages to history format (exclude the initial greeting message)
-      const conversationHistory = messages
-        .slice(1) // Skip the initial greeting message
-        .map(msg => ({
-          role: msg.sender === 'user' ? 'user' : 'assistant',
-          content: msg.content.map(c => c.content).join('')
-        }));
+      const conversationHistory: Array<{role: string, content: string}> = [];
+      
+      messages.slice(1).forEach(msg => { // Skip the initial greeting message
+        if (msg.sender === 'user') {
+          conversationHistory.push({
+            role: 'user',
+            content: msg.content.map(c => c.content).join('')
+          });
+        } else if (msg.sender === 'assistant') {
+          // Process content chronologically, maintaining interleaved structure
+          let currentTextContent = '';
+          
+          msg.content.forEach(contentItem => {
+            if (contentItem.type === 'text') {
+              // Accumulate text content
+              currentTextContent += contentItem.content;
+            } else if (contentItem.type === 'tool_call') {
+              // If we have accumulated text, add it as an assistant message first
+              if (currentTextContent.trim()) {
+                conversationHistory.push({
+                  role: 'assistant',
+                  content: currentTextContent
+                });
+                currentTextContent = ''; // Reset
+              }
+              
+              // Add tool use request as assistant message (even if still requesting)
+              if (contentItem.toolCall) {
+                conversationHistory.push({
+                  role: 'assistant', 
+                  content: `[Using tool: ${contentItem.toolCall.name} with input: ${contentItem.toolCall.input || '{}'}]`
+                });
+              }
+              
+              // Add tool result as user message (only if completed)
+              if (contentItem.toolCall?.status === 'completed' && contentItem.toolCall?.result) {
+                conversationHistory.push({
+                  role: 'user',
+                  content: `[Result for tool ${contentItem.toolCall.name}: ${contentItem.toolCall.result}]`
+                });
+              }
+            }
+          });
+          
+          // Add any remaining text content as final assistant message
+          if (currentTextContent.trim()) {
+            conversationHistory.push({
+              role: 'assistant',
+              content: currentTextContent
+            });
+          }
+        }
+      });
 
       const response = await fetch('http://localhost:8080/chat', {
         method: 'POST',
