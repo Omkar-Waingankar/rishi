@@ -138,10 +138,11 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		stream := s.anthropicClient.Messages.NewStreaming(r.Context(), anthropic.MessageNewParams{
-			Model:     model,
-			MaxTokens: int64(maxTokens),
-			Messages:  msgs,
-			Tools:     tools,
+			Model:       model,
+			MaxTokens:   int64(maxTokens),
+			Messages:    msgs,
+			Tools:       tools,
+			Temperature: anthropic.Opt(0.1),
 		})
 
 		message := anthropic.Message{}

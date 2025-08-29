@@ -144,6 +144,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
                       ) : (
                         <div key={index} className={`inline-tool-call ${item.toolCall?.status}`}>
                           {item.content}
+                          {item.toolCall?.status === 'failed' && (
+                            <span className="tool-call-error-indicator" aria-label="Failed">×</span>
+                          )}
                         </div>
                       )
                     ))}

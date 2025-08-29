@@ -3,11 +3,13 @@ interface MessageContent {
   content: string;
   toolCall?: {
     name: string;
-    status: 'requesting' | 'completed';
+    status: ToolCallStatus;
     input?: string;
     result?: string;
   };
 }
+
+export type ToolCallStatus = 'requesting' | 'completed' | 'failed';
 
 export interface Message {
   id: number;
@@ -32,7 +34,7 @@ export interface ChatResponse {
   tool_call?: {
     name: string;
     input: string;
-    status: 'requesting' | 'completed';
+    status: ToolCallStatus;
     result?: string;
   };
   is_final?: boolean;

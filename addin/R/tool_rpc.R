@@ -42,19 +42,19 @@ auth_filter <- function(req, res) {
   
   if (is.null(auth_header)) {
     res$status <- 401
-    return(list(error = "Missing Authorization header"))
+    return(list(error = jsonlite::unbox("Missing Authorization header")))
   }
   
   if (!startsWith(auth_header, "Bearer ")) {
     res$status <- 401
-    return(list(error = "Invalid Authorization header format"))
+    return(list(error = jsonlite::unbox("Invalid Authorization header format")))
   }
   
   token <- substring(auth_header, 8)
   
   if (token != .tool_rpc_token) {
     res$status <- 401
-    return(list(error = "Invalid token"))
+    return(list(error = jsonlite::unbox("Invalid token")))
   }
   
   plumber::forward()
@@ -80,7 +80,7 @@ list_files_endpoint <- function(req, res) {
   
   if (safe_root == "You are not allowed to list files from root") {
     res$status <- 400
-    return(list(error = safe_root))
+    return(list(error = jsonlite::unbox(safe_root)))
   }
   
   full_path <- if (path == "") {
@@ -93,12 +93,12 @@ list_files_endpoint <- function(req, res) {
   
   if (!startsWith(full_path, safe_root)) {
     res$status <- 400
-    return(list(error = "Path outside safe root"))
+    return(list(error = jsonlite::unbox("Path outside safe root")))
   }
   
   if (!dir.exists(full_path)) {
     res$status <- 400
-    return(list(error = "Directory does not exist"))
+    return(list(error = jsonlite::unbox("Directory does not exist")))
   }
   
   tryCatch({
@@ -136,7 +136,7 @@ list_files_endpoint <- function(req, res) {
     return(list(files = files))
   }, error = function(e) {
     res$status <- 500
-    return(list(error = paste("Failed to list files:", e$message)))
+    return(list(error = jsonlite::unbox(paste("Failed to list files:", e$message))))
   })
 }
 
@@ -150,14 +150,14 @@ read_file_endpoint <- function(req, res) {
   
   if (is.null(relpath) || relpath == "") {
     res$status <- 400
-    return(list(error = "Missing relpath parameter"))
+    return(list(error = jsonlite::unbox("Missing relpath parameter")))
   }
   
   safe_root <- compute_safe_root()
   
   if (safe_root == "You are not allowed to list files from root") {
     res$status <- 400
-    return(list(error = safe_root))
+    return(list(error = jsonlite::unbox(safe_root)))
   }
   
   full_path <- file.path(safe_root, relpath)
@@ -165,23 +165,23 @@ read_file_endpoint <- function(req, res) {
   
   if (!startsWith(full_path, safe_root)) {
     res$status <- 400
-    return(list(error = "Path outside safe root"))
+    return(list(error = jsonlite::unbox("Path outside safe root")))
   }
   
   if (!file.exists(full_path)) {
     res$status <- 404
-    return(list(error = "File not found"))
+    return(list(error = jsonlite::unbox("File not found")))
   }
   
   if (dir.exists(full_path)) {
     res$status <- 400
-    return(list(error = "Path is a directory, not a file"))
+    return(list(error = jsonlite::unbox("Path is a directory, not a file")))
   }
   
   file_info <- file.info(full_path)
   if (is.na(file_info$size) || file_info$size > max_bytes) {
     res$status <- 400
-    return(list(error = paste("File too large or unreadable:", file_info$size, "bytes, max:", max_bytes)))
+    return(list(error = jsonlite::unbox(paste("File too large or unreadable:", file_info$size, "bytes, max:", max_bytes))))
   }
   
   # Handle empty files
@@ -208,7 +208,7 @@ read_file_endpoint <- function(req, res) {
     return(res)
   }, error = function(e) {
     res$status <- 500
-    return(list(error = paste("Failed to read file:", e$message)))
+    return(list(error = jsonlite::unbox(paste("Failed to read file:", e$message))))
   })
 }
 

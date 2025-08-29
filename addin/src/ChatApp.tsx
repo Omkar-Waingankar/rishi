@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import MessageList from './MessageList';
 import InputBox from './InputBox';
-import { Message, ChatResponse } from './types';
+import { Message, ChatResponse, ToolCallStatus } from './types';
 
 const getToolCallText = (toolCall: { name: string; status: string; input?: string }) => {
   let filename = '';
@@ -15,23 +15,39 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: strin
 
   switch (toolCall.name) {
     case 'read_file':
-      return toolCall.status === 'requesting' 
-        ? `Reading ${filename}`
-        : `Read ${filename}`;
+      if (toolCall.status === 'requesting') {
+        return `Reading ${filename}`;
+      } else if (toolCall.status === 'failed') {
+        return `Failed to read ${filename}`;
+      } else {
+        return `Read ${filename}`;
+      }
     case 'list_files':
       if (filename) {
-        return toolCall.status === 'requesting'
-          ? `Listing files in '${filename}'`
-          : `Listed files in '${filename}'`;
+        if (toolCall.status === 'requesting') {
+          return `Listing files in '${filename}'`;
+        } else if (toolCall.status === 'failed') {
+          return `Failed to list files in '${filename}'`;
+        } else {
+          return `Listed files in '${filename}'`;
+        }
       } else {
-        return toolCall.status === 'requesting'
-          ? `Listing files`
-          : `Listed files`;
+        if (toolCall.status === 'requesting') {
+          return `Listing files`;
+        } else if (toolCall.status === 'failed') {
+          return `Failed to list files`;
+        } else {
+          return `Listed files`;
+        }
       }
     default:
-      return toolCall.status === 'requesting'
-        ? `Using ${toolCall.name}`
-        : `Used ${toolCall.name}`;
+      if (toolCall.status === 'requesting') {
+        return `Using ${toolCall.name}`;
+      } else if (toolCall.status === 'failed') {
+        return `Failed to use ${toolCall.name}`;
+      } else {
+        return `Used ${toolCall.name}`;
+      }
   }
 };
 
@@ -105,8 +121,11 @@ const ChatApp: React.FC = () => {
                 });
               }
               
-              // Add tool result as user message (only if completed)
-              if (contentItem.toolCall?.status === 'completed' && contentItem.toolCall?.result) {
+              // Add tool result as user message (for both completed and failed)
+              if (
+                (contentItem.toolCall?.status === 'completed' || contentItem.toolCall?.status === 'failed') 
+                && contentItem.toolCall?.result
+              ) {
                 conversationHistory.push({
                   role: 'user',
                   content: `[Result for tool ${contentItem.toolCall.name}: ${contentItem.toolCall.result}]`
@@ -114,7 +133,6 @@ const ChatApp: React.FC = () => {
               }
             }
           });
-          
           // Add any remaining text content as final assistant message
           if (currentTextContent.trim()) {
             conversationHistory.push({
@@ -201,15 +219,32 @@ const ChatApp: React.FC = () => {
                   toolCall: data.tool_call
                 });
               } else if (data.tool_call.status === 'completed') {
+                // Check if the tool call actually failed by parsing the result
+                let actualStatus = 'completed';
+                if (data.tool_call.result) {
+                  try {
+                    const resultObj = JSON.parse(data.tool_call.result);
+                    if (resultObj.error) {
+                      actualStatus = 'failed';
+                    }
+                  } catch {
+                    // If result isn't JSON, assume success
+                  }
+                }
+
                 // Update the last tool call in content
                 for (let i = assistantContent.length - 1; i >= 0; i--) {
                   if (assistantContent[i].type === 'tool_call' && 
                       assistantContent[i].toolCall?.name === data.tool_call.name &&
                       assistantContent[i].toolCall?.status === 'requesting') {
+                    const updatedToolCall = {
+                      ...data.tool_call,
+                      status: actualStatus as ToolCallStatus
+                    };
                     assistantContent[i] = {
                       type: 'tool_call',
-                      content: getToolCallText(data.tool_call),
-                      toolCall: data.tool_call
+                      content: getToolCallText(updatedToolCall),
+                      toolCall: updatedToolCall
                     };
                     break;
                   }
