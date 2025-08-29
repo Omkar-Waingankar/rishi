@@ -34,4 +34,5 @@ export interface ChatResponse {
     status: 'requesting' | 'completed';
   };
   is_final?: boolean;
+  error?: string;
 }

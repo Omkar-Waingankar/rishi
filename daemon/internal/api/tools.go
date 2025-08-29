@@ -29,12 +29,13 @@ var ReadFileToolInputSchema = GenerateSchema[ReadFileToolInput]()
 
 var ListFilesTool = anthropic.ToolParam{
 	Name:        "list_files",
-	Description: anthropic.String("List the contents (files and subdirectories) of a directory. If no path is provided, lists the current working directory."),
+	Description: anthropic.String("List the contents (files and subdirectories) of a directory. If no path is provided, lists the current working directory. You have the option of listing subdirectories recursively or not."),
 	InputSchema: ListFilesToolInputSchema,
 }
 
 type ListFilesToolInput struct {
-	Path string `json:"path,omitempty"`
+	Path      string `json:"path,omitempty"`
+	Recursive bool   `json:"recursive,omitempty"`
 }
 
 var ListFilesToolInputSchema = GenerateSchema[ListFilesToolInput]()
@@ -134,11 +135,11 @@ func (s *ServerClient) readFileFromRStudio(filePath string) (*ReadFileToolResult
 }
 
 // listFilesFromRStudio makes an HTTP call to the Tool RPC server to list files
-func (s *ServerClient) listFilesFromRStudio(path string) (*ListFilesToolResult, error) {
+func (s *ServerClient) listFilesFromRStudio(path string, recursive bool) (*ListFilesToolResult, error) {
 	payload := map[string]interface{}{
 		"path":      path,
 		"pattern":   nil,
-		"recursive": false,
+		"recursive": recursive,
 		"max_items": 50,
 	}
 

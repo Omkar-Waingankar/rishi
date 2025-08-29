@@ -100,7 +100,7 @@ const ChatApp: React.FC = () => {
       }
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let assistantContent: Array<{type: 'text' | 'tool_call', content: string, toolCall?: any}> = [];
+      let assistantContent: Array<{type: 'text' | 'tool_call' | 'error', content: string, toolCall?: any}> = [];
 
       const assistantMessage: Message = {
         id: Date.now() + 1,
@@ -121,7 +121,16 @@ const ChatApp: React.FC = () => {
         for (const line of lines) {
           try {
             const data: ChatResponse = JSON.parse(line);
-            if (data.text) {
+            if (data.error) {
+              // Handle error from backend
+              assistantContent.push({type: 'error', content: data.error});
+              
+              setMessages(prev => prev.map(msg => 
+                msg.id === assistantMessage.id && 'content' in msg
+                  ? { ...msg, content: [...assistantContent] }
+                  : msg
+              ));
+            } else if (data.text) {
               // Accumulate text chunks - find the last text item or create new one
               const lastItem = assistantContent[assistantContent.length - 1];
               if (lastItem && lastItem.type === 'text') {

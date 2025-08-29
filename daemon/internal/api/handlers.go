@@ -113,6 +113,8 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		msgs = append(msgs, anthropic.NewUserMessage(anthropic.NewTextBlock(in.Message)))
 	}
 
+	log.Info().Msgf("user message: %s", in.Message[:min(100, len(in.Message))])
+
 	// Start streaming with the official Anthropic SDK
 	model := anthropic.ModelClaudeSonnet4_20250514
 	if in.Model != "" {
@@ -160,12 +162,21 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		// Check for streaming errors
+		if err := stream.Err(); err != nil {
+			log.Error().Err(err).Msg("streaming error occurred")
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": fmt.Sprintf("streaming error: %v", err)})
+			flusher.Flush()
+			return
+		}
+
 		toolResults := []anthropic.ContentBlockParamUnion{}
 		for _, block := range message.Content {
 			switch variant := block.AsAny().(type) {
 			case anthropic.TextBlock:
 				msgs = append(msgs, anthropic.NewAssistantMessage(anthropic.NewTextBlock(variant.Text)))
 			case anthropic.ToolUseBlock:
+				log.Info().Msgf("tool use: %s, input: %s", block.Name, variant.JSON.Input.Raw())
 				// Stream tool call start event to frontend
 				_ = json.NewEncoder(w).Encode(map[string]any{
 					"tool_call": map[string]any{
@@ -206,7 +217,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						}
 					} else {
 						// Make HTTP call to RStudio frontend to list files
-						listResult, err := s.listFilesFromRStudio(input.Path)
+						listResult, err := s.listFilesFromRStudio(input.Path, input.Recursive)
 						if err != nil {
 							log.Error().Err(err).Msg("Failed to list files from RStudio frontend")
 							response = ListFilesToolResult{
@@ -227,6 +238,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// Stream tool call completion event to frontend
+				log.Info().Msgf("tool call completed: %s, result: %s", block.Name, string(b)[:min(100, len(string(b)))])
 				_ = json.NewEncoder(w).Encode(map[string]any{
 					"tool_call": map[string]any{
 						"name":   block.Name,
@@ -242,6 +254,8 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 				msgs = append(msgs, anthropic.NewUserMessage(toolResults...))
 			}
 		}
+
+		log.Info().Msgf("toolResults: %d", len(toolResults))
 
 		if len(toolResults) == 0 {
 			// If no tool results, we're done streaming
