@@ -13,7 +13,7 @@ import (
 
 var ReadFileTool = anthropic.ToolParam{
 	Name:        "read_file",
-	Description: anthropic.String("Read the contents of a file. Use this when you want to see what's inside a file (usually code). Do not use this with directory names. Do not use this with data files."),
+	Description: anthropic.String("Read the contents of a file. REQUIRED: path parameter must be provided and cannot be empty. Use this when you want to see what's inside a file (usually code). Do not use this with directory names. Do not use this with data files."),
 	InputSchema: ReadFileToolInputSchema,
 }
 
@@ -23,13 +23,21 @@ type ReadFileToolInput struct {
 
 type ReadFileToolResult struct {
 	Content string `json:"content"`
+	Error   string `json:"error,omitempty"`
 }
 
 var ReadFileToolInputSchema = GenerateSchema[ReadFileToolInput]()
 
+func validateReadFileToolInput(input ReadFileToolInput) error {
+	if input.Path == "" {
+		return fmt.Errorf("path is required")
+	}
+	return nil
+}
+
 var ListFilesTool = anthropic.ToolParam{
 	Name:        "list_files",
-	Description: anthropic.String("List the contents (files and subdirectories) of a directory. If no path is provided, lists the current working directory. You have the option of listing subdirectories recursively or not."),
+	Description: anthropic.String("List the contents (files and subdirectories) of a directory. REQUIRED: path parameter must be provided. If you wish to search the root directory, use the empty string. OPTIONAL: recursive parameter can be optionally provided to list subdirectories recursively, default is false."),
 	InputSchema: ListFilesToolInputSchema,
 }
 
@@ -40,8 +48,13 @@ type ListFilesToolInput struct {
 
 var ListFilesToolInputSchema = GenerateSchema[ListFilesToolInput]()
 
+func validateListFilesToolInput(_ ListFilesToolInput) error {
+	return nil // no validation needed, just here for consistency
+}
+
 type ListFilesToolResult struct {
 	Objects []ListFilesToolResultObj `json:"objects"`
+	Error   string                   `json:"error,omitempty"`
 }
 
 type ListFilesToolResultObj struct {
@@ -105,12 +118,12 @@ func (s *ServerClient) readFileFromRStudio(filePath string) (*ReadFileToolResult
 		if err := json.Unmarshal(body, &errorResp); err == nil {
 			if errorMsg, ok := errorResp["error"].(string); ok {
 				return &ReadFileToolResult{
-					Content: fmt.Sprintf("Error: %s", errorMsg),
+					Error: errorMsg,
 				}, nil
 			}
 		}
 		return &ReadFileToolResult{
-			Content: fmt.Sprintf("Error: HTTP %d", resp.StatusCode),
+			Error: fmt.Sprintf("HTTP %d", resp.StatusCode),
 		}, nil
 	}
 
@@ -160,16 +173,12 @@ func (s *ServerClient) listFilesFromRStudio(path string, recursive bool) (*ListF
 			if errorMsg, ok := errorResp["error"].(string); ok {
 				// Return empty list with error in a file entry for visibility
 				return &ListFilesToolResult{
-					Objects: []ListFilesToolResultObj{
-						{Path: fmt.Sprintf("Error: %s", errorMsg), IsDir: false},
-					},
+					Error: errorMsg,
 				}, nil
 			}
 		}
 		return &ListFilesToolResult{
-			Objects: []ListFilesToolResultObj{
-				{Path: fmt.Sprintf("Error: HTTP %d", resp.StatusCode), IsDir: false},
-			},
+			Error: fmt.Sprintf("HTTP %d", resp.StatusCode),
 		}, nil
 	}
 

@@ -193,16 +193,30 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 				case "read_file":
 					var input ReadFileToolInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
-						http.Error(w, "invalid tool input", http.StatusBadRequest)
-						return
+						errMsg := fmt.Sprintf("Failed to parse read_file input: %s, error: %v", variant.JSON.Input.Raw(), err)
+						log.Error().Err(err).Msgf(errMsg)
+						response = ReadFileToolResult{
+							Error: errMsg,
+						}
+						break
+					}
+
+					if err := validateReadFileToolInput(input); err != nil {
+						errMsg := fmt.Sprintf("Failed to validate read_file input: %s, error: %v", input.Path, err)
+						log.Error().Err(err).Msgf(errMsg)
+						response = ReadFileToolResult{
+							Error: errMsg,
+						}
+						break
 					}
 
 					// Make HTTP call to RStudio frontend to read file
 					readResult, err := s.readFileFromRStudio(input.Path)
 					if err != nil {
-						log.Error().Err(err).Msgf("Failed to read file from RStudio frontend: %s", input.Path)
+						errMsg := fmt.Sprintf("Failed to read file from RStudio frontend: %s, error: %v", input.Path, err)
+						log.Error().Err(err).Msgf(errMsg)
 						response = ReadFileToolResult{
-							Content: fmt.Sprintf("Error reading file: %v", err),
+							Error: errMsg,
 						}
 					} else {
 						response = *readResult
@@ -210,25 +224,33 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 				case "list_files":
 					var input ListFilesToolInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
-						log.Error().Err(err).Msg("Failed to parse list_files input")
+						errMsg := fmt.Sprintf("Failed to parse list_files input: %s, error: %v", variant.JSON.Input.Raw(), err)
+						log.Error().Err(err).Msgf(errMsg)
 						response = ListFilesToolResult{
-							Objects: []ListFilesToolResultObj{
-								{Path: "Error: Invalid input", IsDir: false},
-							},
+							Error: errMsg,
+						}
+						break
+					}
+
+					if err := validateListFilesToolInput(input); err != nil {
+						errMsg := fmt.Sprintf("Failed to validate list_files input: path=%s, recursive=%v, error: %v", input.Path, input.Recursive, err)
+						log.Error().Err(err).Msgf(errMsg)
+						response = ListFilesToolResult{
+							Error: errMsg,
+						}
+						break
+					}
+
+					// Make HTTP call to RStudio frontend to list files
+					listResult, err := s.listFilesFromRStudio(input.Path, input.Recursive)
+					if err != nil {
+						errMsg := fmt.Sprintf("Failed to list files from RStudio frontend: path=%s, recursive=%v, error: %v", input.Path, input.Recursive, err)
+						log.Error().Err(err).Msgf(errMsg)
+						response = ListFilesToolResult{
+							Error: errMsg,
 						}
 					} else {
-						// Make HTTP call to RStudio frontend to list files
-						listResult, err := s.listFilesFromRStudio(input.Path, input.Recursive)
-						if err != nil {
-							log.Error().Err(err).Msg("Failed to list files from RStudio frontend")
-							response = ListFilesToolResult{
-								Objects: []ListFilesToolResultObj{
-									{Path: fmt.Sprintf("Error: %v", err), IsDir: false},
-								},
-							}
-						} else {
-							response = *listResult
-						}
+						response = *listResult
 					}
 				}
 
