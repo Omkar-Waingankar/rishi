@@ -169,8 +169,8 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 				// Stream tool call start event to frontend
 				_ = json.NewEncoder(w).Encode(map[string]any{
 					"tool_call": map[string]any{
-						"name": block.Name,
-						"input": variant.JSON.Input.Raw(),
+						"name":   block.Name,
+						"input":  variant.JSON.Input.Raw(),
 						"status": "requesting",
 					},
 				})
@@ -180,7 +180,6 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 				switch block.Name {
 				case "read_file":
 					var input ReadFileToolInput
-					log.Info().Msgf("variant.JSON.Input.Raw(): %v", variant.JSON.Input.Raw())
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
 						http.Error(w, "invalid tool input", http.StatusBadRequest)
 						return
@@ -230,18 +229,16 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 				// Stream tool call completion event to frontend
 				_ = json.NewEncoder(w).Encode(map[string]any{
 					"tool_call": map[string]any{
-						"name": block.Name,
-						"input": variant.JSON.Input.Raw(),
+						"name":   block.Name,
+						"input":  variant.JSON.Input.Raw(),
 						"status": "completed",
 					},
 				})
 				flusher.Flush()
 
-				log.Info().Msgf("variant.JSON.Input: %v", variant.JSON.Input)
 				msgs = append(msgs, anthropic.NewAssistantMessage(anthropic.NewToolUseBlock(block.ID, variant.JSON.Input, block.Name)))
 
 				toolResults = append(toolResults, anthropic.NewToolResultBlock(block.ID, string(b), false))
-				log.Info().Msgf("toolResults: %v", toolResults)
 				msgs = append(msgs, anthropic.NewUserMessage(toolResults...))
 			}
 		}

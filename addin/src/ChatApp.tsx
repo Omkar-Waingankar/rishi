@@ -20,8 +20,8 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: strin
         : `Claude has read ${filename}`;
     case 'list_files':
       return toolCall.status === 'requesting'
-        ? `Claude asking to list files in ${filename}`
-        : `Claude has listed files in ${filename}`;
+        ? `Claude asking to list files ${filename ? `in ${filename}` : ''}`
+        : `Claude has listed files ${filename ? `in ${filename}` : ''}`;
     default:
       return toolCall.status === 'requesting'
         ? `Claude asking to use ${toolCall.name}`
@@ -89,6 +89,7 @@ const ChatApp: React.FC = () => {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantResponse = '';
+      let assistantContent: Array<{type: 'text' | 'tool_call', content: string, toolCall?: any}> = [];
 
       const assistantMessage: Message = {
         id: Date.now() + 1,
@@ -111,34 +112,59 @@ const ChatApp: React.FC = () => {
             const data: ChatResponse = JSON.parse(line);
             if (data.text) {
               assistantResponse += data.text;
+              assistantContent.push({type: 'text', content: data.text});
+              
+              // Render mixed content as combined text with tool calls inline
+              const combinedText = assistantContent.map(item => {
+                if (item.type === 'text') {
+                  return item.content;
+                } else {
+                  return `\n\n<div class="inline-tool-call ${item.toolCall?.status}">${getToolCallText(item.toolCall)}</div>\n\n`;
+                }
+              }).join('');
+              
               setMessages(prev => prev.map(msg => 
                 msg.id === assistantMessage.id 
-                  ? { ...msg, text: assistantResponse }
+                  ? { ...msg, text: combinedText }
                   : msg
               ));
             } else if (data.tool_call) {
-              // Handle tool call messages
-              const toolCallMessage: Message = {
-                id: Date.now() + Math.random(),
-                text: getToolCallText(data.tool_call),
-                sender: 'assistant',
-                timestamp: new Date(),
-                type: 'tool_call',
-                toolCall: data.tool_call
-              };
-              
               if (data.tool_call.status === 'requesting') {
-                setMessages(prev => [...prev, toolCallMessage]);
+                assistantContent.push({
+                  type: 'tool_call', 
+                  content: getToolCallText(data.tool_call),
+                  toolCall: data.tool_call
+                });
               } else if (data.tool_call.status === 'completed') {
-                // Update the existing tool call message to show completion
-                setMessages(prev => prev.map(msg => 
-                  msg.type === 'tool_call' && 
-                  msg.toolCall?.name === data.tool_call?.name && 
-                  msg.toolCall?.status === 'requesting'
-                    ? { ...msg, text: getToolCallText(data.tool_call!), toolCall: data.tool_call }
-                    : msg
-                ));
+                // Update the last tool call in content
+                for (let i = assistantContent.length - 1; i >= 0; i--) {
+                  if (assistantContent[i].type === 'tool_call' && 
+                      assistantContent[i].toolCall?.name === data.tool_call.name &&
+                      assistantContent[i].toolCall?.status === 'requesting') {
+                    assistantContent[i] = {
+                      type: 'tool_call',
+                      content: getToolCallText(data.tool_call),
+                      toolCall: data.tool_call
+                    };
+                    break;
+                  }
+                }
               }
+              
+              // Re-render combined content
+              const combinedText = assistantContent.map(item => {
+                if (item.type === 'text') {
+                  return item.content;
+                } else {
+                  return `\n\n<div class="inline-tool-call ${item.toolCall?.status}">${getToolCallText(item.toolCall)}</div>\n\n`;
+                }
+              }).join('');
+              
+              setMessages(prev => prev.map(msg => 
+                msg.id === assistantMessage.id 
+                  ? { ...msg, text: combinedText }
+                  : msg
+              ));
             }
           } catch (e) {
             console.error('Error parsing JSON:', e);

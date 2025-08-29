@@ -261,39 +261,34 @@
   white-space: pre-wrap;
 }
 
-/* Tool Call Messages */
-.message.tool_call {
-  margin: 2px 0;
-}
-
-.message.tool_call .message-content {
-  background: rgba(155, 81, 224, 0.05) !important;
-  border: none !important;
-  border-radius: 6px !important;
-  padding: 4px 8px !important;
-  box-shadow: none !important;
-}
-
-.tool-call-message {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+/* Inline Tool Call Messages */
+.inline-tool-call {
+  display: inline-block;
+  background: rgba(155, 81, 224, 0.05);
+  border-radius: 4px;
+  padding: 2px 6px;
   font-size: 11px;
   font-weight: 400;
   color: var(--text-secondary);
+  font-style: italic;
+  margin: 2px 0;
+  border-left: 2px solid rgba(155, 81, 224, 0.3);
 }
 
-.tool-call-status {
+.inline-tool-call.requesting {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.inline-tool-call.requesting::before {
+  content: "⏳ ";
   font-size: 10px;
   opacity: 0.8;
 }
 
-.tool-call-status.requesting {
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-.tool-call-text {
-  font-style: italic;
+.inline-tool-call.completed::before {
+  content: "✅ ";
+  font-size: 10px;
+  opacity: 0.8;
 }
 
 @keyframes pulse {
