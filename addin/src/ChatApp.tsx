@@ -32,12 +32,23 @@ const ChatApp: React.FC = () => {
     abortControllerRef.current = new AbortController();
 
     try {
+      // Convert messages to history format (exclude the initial greeting message)
+      const conversationHistory = messages
+        .slice(1) // Skip the initial greeting message
+        .map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'assistant',
+          content: msg.text
+        }));
+
       const response = await fetch('http://localhost:8080/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: messageText }),
+        body: JSON.stringify({ 
+          message: messageText,
+          history: conversationHistory
+        }),
         signal: abortControllerRef.current.signal
       });
 
