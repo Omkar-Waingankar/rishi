@@ -16,16 +16,22 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: strin
   switch (toolCall.name) {
     case 'read_file':
       return toolCall.status === 'requesting' 
-        ? `Claude asking to read ${filename}`
-        : `Claude has read ${filename}`;
+        ? `Reading ${filename}`
+        : `Read ${filename}`;
     case 'list_files':
-      return toolCall.status === 'requesting'
-        ? `Claude asking to list files ${filename ? `in ${filename}` : ''}`
-        : `Claude has listed files ${filename ? `in ${filename}` : ''}`;
+      if (filename) {
+        return toolCall.status === 'requesting'
+          ? `Listing files in '${filename}'`
+          : `Listed files in '${filename}'`;
+      } else {
+        return toolCall.status === 'requesting'
+          ? `Listing files`
+          : `Listed files`;
+      }
     default:
       return toolCall.status === 'requesting'
-        ? `Claude asking to use ${toolCall.name}`
-        : `Claude has used ${toolCall.name}`;
+        ? `Using ${toolCall.name}`
+        : `Used ${toolCall.name}`;
   }
 };
 
