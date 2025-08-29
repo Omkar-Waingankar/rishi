@@ -116,7 +116,15 @@ const ChatApp: React.FC = () => {
           try {
             const data: ChatResponse = JSON.parse(line);
             if (data.text) {
-              assistantContent.push({type: 'text', content: data.text});
+              // Accumulate text chunks - find the last text item or create new one
+              const lastItem = assistantContent[assistantContent.length - 1];
+              if (lastItem && lastItem.type === 'text') {
+                // Append to existing text content
+                lastItem.content += data.text;
+              } else {
+                // Create new text content item
+                assistantContent.push({type: 'text', content: data.text});
+              }
               
               setMessages(prev => prev.map(msg => 
                 msg.id === assistantMessage.id && 'content' in msg
