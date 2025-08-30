@@ -45,6 +45,11 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if in.SafeRoot == "" {
+		http.Error(w, "safe root is required", http.StatusBadRequest)
+		return
+	}
+
 	// System prompt for RStudio-embedded coding agent (chat now; agentic tools soon)
 	systemPrompt := `You are **Tibbl**, an embedded coding copilot inside RStudio (Cursor-for-R).
 

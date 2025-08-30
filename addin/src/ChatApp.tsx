@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import MessageList from './MessageList';
 import InputBox from './InputBox';
 import { Message, ChatResponse, ToolCallStatus } from './types';
@@ -64,7 +64,39 @@ const ChatApp: React.FC = () => {
     }
   ]);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const [safeRoot, setSafeRoot] = useState<string | null>(null);
+  const [safeRootError, setSafeRootError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Check safe root on app startup
+  useEffect(() => {
+    const checkSafeRoot = async () => {
+      try {
+        const response = await fetch('http://localhost:8082/safe_root', {
+          method: 'GET',
+          headers: {
+            'Authorization': 'Bearer tibble-dev-local-please-change',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setSafeRoot(data.safe_root);
+          setSafeRootError(null);
+        } else {
+          const errorData = await response.json();
+          setSafeRootError(errorData.error || 'Failed to get safe root');
+          setSafeRoot(null);
+        }
+      } catch (error) {
+        console.error('Error checking safe root:', error);
+        setSafeRootError('Failed to connect to tool server');
+        setSafeRoot(null);
+      }
+    };
+
+    checkSafeRoot();
+  }, []);
 
   const handleSendMessage = async (messageText: string): Promise<void> => {
     if (!messageText.trim()) return;
@@ -150,7 +182,8 @@ const ChatApp: React.FC = () => {
         },
         body: JSON.stringify({ 
           message: messageText,
-          history: conversationHistory
+          history: conversationHistory,
+          safe_root: safeRoot
         }),
         signal: abortControllerRef.current.signal
       });
@@ -297,10 +330,24 @@ const ChatApp: React.FC = () => {
         <h2>Tibbl</h2>
       </div>
       <MessageList messages={messages} isLoading={isStreaming} />
+      {safeRootError && (
+        <div className="safe-root-dialog">
+          <div className="safe-root-message">
+            <h3>⚠️ Active Directory Required</h3>
+            <p>{safeRootError}</p>
+            <p>Please set your active directory by:</p>
+            <ul>
+              <li>Opening an RStudio project (.Rproj file), or</li>
+              <li>Using <code>setwd("/path/to/your/project")</code> in the R console</li>
+            </ul>
+          </div>
+        </div>
+      )}
       <InputBox 
         onSendMessage={handleSendMessage} 
-        disabled={isStreaming}
+        disabled={isStreaming || !safeRoot}
         onStopStreaming={handleStopStreaming}
+        safeRoot={safeRoot}
       />
     </div>
   );

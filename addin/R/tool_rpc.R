@@ -234,6 +234,7 @@ startToolRPC <- function() {
   pr <- plumber::pr() %>%
     plumber::pr_filter("auth", auth_filter) %>%
     plumber::pr_get("/healthz", healthz_endpoint) %>%
+    plumber::pr_get("/safe_root", safe_root_endpoint) %>%
     plumber::pr_post("/list", list_files_endpoint) %>%
     plumber::pr_post("/read", read_file_endpoint) %>%
     plumber::pr_set_serializer(plumber::serializer_unboxed_json())
