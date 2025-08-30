@@ -66,6 +66,17 @@ healthz_endpoint <- function() {
   list(ok = TRUE)
 }
 
+#' Compute safe root endpoint
+#' @get /safe_root
+safe_root_endpoint <- function(req, res) {
+  safe_root <- compute_safe_root()
+  if (safe_root == "You are not allowed to list files from root") {
+    res$status <- 400
+    return(list(error = jsonlite::unbox(safe_root)))
+  }
+  list(safe_root = jsonlite::unbox(safe_root))
+}
+
 #' List files endpoint
 #' @post /list
 list_files_endpoint <- function(req, res) {

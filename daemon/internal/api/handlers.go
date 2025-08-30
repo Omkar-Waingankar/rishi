@@ -26,10 +26,11 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		Content string `json:"content"`
 	}
 	type reqBody struct {
-		History []inboundMessage `json:"history"`
-		Message string           `json:"message"`
-		Model   string           `json:"model"`
-		MaxTok  int              `json:"max_tokens"`
+		History  []inboundMessage `json:"history"`
+		Message  string           `json:"message"`
+		Model    string           `json:"model"`
+		MaxTok   int              `json:"max_tokens"`
+		SafeRoot string           `json:"safe_root"`
 	}
 	var in reqBody
 	_ = json.NewDecoder(r.Body).Decode(&in) // tolerate empty/malformed JSON
@@ -122,13 +123,11 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		maxTokens = 1024
 	}
 
-	toolParams := []anthropic.ToolParam{
-		ReadFileTool,
-		ListFilesTool,
+	tools := []anthropic.ToolUnionParam{
+		{OfTextEditor20250728: &anthropic.ToolTextEditor20250728Param{}},
 	}
-	tools := make([]anthropic.ToolUnionParam, len(toolParams))
-	for i, toolParam := range toolParams {
-		tools[i] = anthropic.ToolUnionParam{OfTool: &toolParam}
+	textEditorController := textEditorController{
+		safeRoot: in.SafeRoot,
 	}
 
 	for {
@@ -174,79 +173,34 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 				msgs = append(msgs, anthropic.NewAssistantMessage(anthropic.NewTextBlock(variant.Text)))
 			case anthropic.ToolUseBlock:
 				log.Info().Msgf("tool use: %s, input: %s", block.Name, variant.JSON.Input.Raw())
-				// Stream tool call start event to frontend
-				_ = json.NewEncoder(w).Encode(map[string]any{
-					"tool_call": map[string]any{
-						"name":   block.Name,
-						"input":  variant.JSON.Input.Raw(),
-						"status": "requesting",
-					},
-				})
-				flusher.Flush()
 
 				var response interface{}
 				switch block.Name {
-				case "read_file":
-					var input ReadFileToolInput
+				case "str_replace_based_edit_tool":
+					var input textEditorInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
 						errMsg := fmt.Sprintf("Failed to parse read_file input: %s, error: %v", variant.JSON.Input.Raw(), err)
 						log.Error().Err(err).Msgf(errMsg)
-						response = ReadFileToolResult{
+						response = textEditorViewOutput{
 							Error: errMsg,
 						}
 						break
 					}
 
-					if err := validateReadFileToolInput(input); err != nil {
-						errMsg := fmt.Sprintf("Failed to validate read_file input: %s, error: %v", input.Path, err)
-						log.Error().Err(err).Msgf(errMsg)
-						response = ReadFileToolResult{
-							Error: errMsg,
-						}
-						break
-					}
+					switch input.Command {
+					case ViewCommand:
+						// Stream tool call start event to frontend
+						_ = json.NewEncoder(w).Encode(map[string]any{
+							"tool_call": map[string]any{
+								"name":   input.Command,
+								"input":  input.textEditorViewInput,
+								"status": "requesting",
+							},
+						})
+						flusher.Flush()
 
-					// Make HTTP call to RStudio frontend to read file
-					readResult, err := s.readFileFromRStudio(input.Path)
-					if err != nil {
-						errMsg := fmt.Sprintf("Failed to read file from RStudio frontend: %s, error: %v", input.Path, err)
-						log.Error().Err(err).Msgf(errMsg)
-						response = ReadFileToolResult{
-							Error: errMsg,
-						}
-					} else {
-						response = *readResult
-					}
-				case "list_files":
-					var input ListFilesToolInput
-					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
-						errMsg := fmt.Sprintf("Failed to parse list_files input: %s, error: %v", variant.JSON.Input.Raw(), err)
-						log.Error().Err(err).Msgf(errMsg)
-						response = ListFilesToolResult{
-							Error: errMsg,
-						}
-						break
-					}
-
-					if err := validateListFilesToolInput(input); err != nil {
-						errMsg := fmt.Sprintf("Failed to validate list_files input: path=%s, recursive=%v, error: %v", input.Path, input.Recursive, err)
-						log.Error().Err(err).Msgf(errMsg)
-						response = ListFilesToolResult{
-							Error: errMsg,
-						}
-						break
-					}
-
-					// Make HTTP call to RStudio frontend to list files
-					listResult, err := s.listFilesFromRStudio(input.Path, input.Recursive)
-					if err != nil {
-						errMsg := fmt.Sprintf("Failed to list files from RStudio frontend: path=%s, recursive=%v, error: %v", input.Path, input.Recursive, err)
-						log.Error().Err(err).Msgf(errMsg)
-						response = ListFilesToolResult{
-							Error: errMsg,
-						}
-					} else {
-						response = *listResult
+						// Get response from textEditorController
+						response = textEditorController.view(input.textEditorViewInput)
 					}
 				}
 
@@ -256,17 +210,23 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				// Stream tool call completion event to frontend
 				log.Info().Msgf("tool call completed: %s, result: %s", block.Name, string(b)[:min(100, len(string(b)))])
-				_ = json.NewEncoder(w).Encode(map[string]any{
-					"tool_call": map[string]any{
-						"name":   block.Name,
-						"input":  variant.JSON.Input.Raw(),
-						"status": "completed",
-						"result": string(b),
-					},
-				})
-				flusher.Flush()
+
+				// Stream tool call completion event to frontend
+				switch block.Name {
+				case "str_replace_based_edit_tool":
+					switch response.(type) {
+					case textEditorViewOutput:
+						_ = json.NewEncoder(w).Encode(map[string]any{
+							"tool_call": map[string]any{
+								"name":   ViewCommand,
+								"status": "completed",
+								"result": response,
+							},
+						})
+						flusher.Flush()
+					}
+				}
 
 				msgs = append(msgs, anthropic.NewAssistantMessage(anthropic.NewToolUseBlock(block.ID, variant.JSON.Input, block.Name)))
 
@@ -274,8 +234,6 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 				msgs = append(msgs, anthropic.NewUserMessage(toolResults...))
 			}
 		}
-
-		log.Info().Msgf("toolResults: %d", len(toolResults))
 
 		if len(toolResults) == 0 {
 			// If no tool results, we're done streaming
