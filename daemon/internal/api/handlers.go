@@ -126,7 +126,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 
 	maxTokens := in.MaxTok
 	if maxTokens == 0 {
-		maxTokens = 1024
+		maxTokens = 4096
 	}
 
 	tools := []anthropic.ToolUnionParam{
@@ -239,16 +239,23 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				log.Info().Msgf("tool call completed: %s, result: %s", block.Name, string(b)[:min(100, len(string(b)))])
+				log.Info().Msgf("tool call completed: %s, result length: %d, result: %s", block.Name, len(string(b)), string(b)[:min(100, len(string(b)))])
 
 				// Stream tool call completion event to frontend
 				switch block.Name {
 				case "str_replace_based_edit_tool":
+					var input textEditorInput
+					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
+						errMsg := fmt.Sprintf("Failed to parse read_file input: %s, error: %v", variant.JSON.Input.Raw(), err)
+						log.Error().Err(err).Msgf(errMsg)
+					}
+
 					switch response.(type) {
 					case textEditorViewOutput:
 						_ = json.NewEncoder(w).Encode(map[string]any{
 							"tool_call": map[string]any{
 								"name":   ViewCommand,
+								"input":  input,
 								"status": "completed",
 								"result": response,
 							},

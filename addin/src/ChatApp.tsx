@@ -18,7 +18,6 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
   switch (toolCall.name) {
     case ToolCommand.VIEW: {
       const viewInput = input as ViewToolInput;
-      console.log('viewInput', viewInput);
       const displayPath = viewInput.path || 'current directory';
 
       if (toolCall.status === 'requesting') {
