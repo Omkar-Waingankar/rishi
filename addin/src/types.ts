@@ -1,15 +1,15 @@
+import { ToolCallStatus } from './tool_types';
+
 interface MessageContent {
   type: 'text' | 'tool_call' | 'error';
   content: string;
   toolCall?: {
     name: string;
     status: ToolCallStatus;
-    input?: string;
+    input?: object;
     result?: string;
   };
 }
-
-export type ToolCallStatus = 'requesting' | 'completed' | 'failed';
 
 export interface Message {
   id: number;
@@ -34,7 +34,7 @@ export interface ChatResponse {
   text?: string;
   tool_call?: {
     name: string;
-    input: string;
+    input: object;
     status: ToolCallStatus;
     result?: string;
   };

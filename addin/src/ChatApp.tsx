@@ -1,20 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
 import MessageList from './MessageList';
 import InputBox from './InputBox';
-import { Message, ChatResponse, ToolCallStatus } from './types';
+import { Message, ChatResponse } from './types';
+import { 
+  ToolCommand, 
+  LegacyToolCommand, 
+  ToolCallStatus, 
+  ViewToolInput, 
+  LegacyReadFileInput, 
+  LegacyListFilesInput 
+} from './tool_types';
 
-const getToolCallText = (toolCall: { name: string; status: string; input?: string }) => {
-  let filename = '';
-  try {
-    const input = JSON.parse(toolCall.input || '{}');
-    filename = input.path || input.Path || '';
-  } catch {
-    // If parsing fails, just use the raw input
-    filename = toolCall.input || '';
-  }
+const getToolCallText = (toolCall: { name: string; status: string; input?: object }) => {
+  // Assume input is always an object - parse it based on the tool command
+  const input = toolCall.input || {};
 
   switch (toolCall.name) {
-    case 'read_file':
+    case ToolCommand.VIEW: {
+      const viewInput = input as ViewToolInput;
+      const displayPath = viewInput.path || 'current directory';
+
+      if (toolCall.status === 'requesting') {
+        return `Viewing ${displayPath}`;
+      } else if (toolCall.status === 'failed') {
+        return `Failed to view ${displayPath}`;
+      } else {
+        return `Viewed ${displayPath}`;
+      }
+    }
+    
+    // Legacy support for old tool names
+    case LegacyToolCommand.READ_FILE: {
+      const readInput = input as LegacyReadFileInput;
+      const filename = readInput.path || readInput.Path || 'file';
+      
       if (toolCall.status === 'requesting') {
         return `Reading ${filename}`;
       } else if (toolCall.status === 'failed') {
@@ -22,25 +41,22 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: strin
       } else {
         return `Read ${filename}`;
       }
-    case 'list_files':
-      if (filename) {
-        if (toolCall.status === 'requesting') {
-          return `Listing files in '${filename}'`;
-        } else if (toolCall.status === 'failed') {
-          return `Failed to list files in '${filename}'`;
-        } else {
-          return `Listed files in '${filename}'`;
-        }
+    }
+    case LegacyToolCommand.LIST_FILES: {
+      const listInput = input as LegacyListFilesInput;
+      const dirPath = listInput.path || listInput.Path || 'current directory';
+      
+      if (toolCall.status === 'requesting') {
+        return `Listing files in ${dirPath}`;
+      } else if (toolCall.status === 'failed') {
+        return `Failed to list files in ${dirPath}`;
       } else {
-        if (toolCall.status === 'requesting') {
-          return `Listing files`;
-        } else if (toolCall.status === 'failed') {
-          return `Failed to list files`;
-        } else {
-          return `Listed files`;
-        }
+        return `Listed files in ${dirPath}`;
       }
+    }
+    
     default:
+      // Handle unknown tool commands gracefully
       if (toolCall.status === 'requesting') {
         return `Using ${toolCall.name}`;
       } else if (toolCall.status === 'failed') {
@@ -147,9 +163,10 @@ const ChatApp: React.FC = () => {
               
               // Add tool use request as assistant message (even if still requesting)
               if (contentItem.toolCall) {
+                const inputStr = JSON.stringify(contentItem.toolCall.input || {});
                 conversationHistory.push({
                   role: 'assistant', 
-                  content: `[Using tool: ${contentItem.toolCall.name} with input: ${contentItem.toolCall.input || '{}'}]`
+                  content: `[Using tool: ${contentItem.toolCall.name} with input: ${inputStr}]`
                 });
               }
               
