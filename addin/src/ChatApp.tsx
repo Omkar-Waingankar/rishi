@@ -18,6 +18,7 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
   switch (toolCall.name) {
     case ToolCommand.VIEW: {
       const viewInput = input as ViewToolInput;
+      console.log('viewInput', viewInput);
       const displayPath = viewInput.path || 'current directory';
 
       if (toolCall.status === 'requesting') {
@@ -285,14 +286,18 @@ const ChatApp: React.FC = () => {
           try {
             const data: ChatResponse = JSON.parse(line);
             if (data.error) {
-              // Handle error from backend
-              assistantContent.push({type: 'error', content: data.error});
+              // Handle error from backend - create a separate error message
+              const errorMessage: Message = {
+                id: Date.now() + 2,
+                sender: 'assistant',
+                timestamp: new Date(),
+                content: [{
+                  type: 'error',
+                  content: data.error
+                }]
+              };
               
-              setMessages(prev => prev.map(msg => 
-                msg.id === assistantMessage.id && 'content' in msg
-                  ? { ...msg, content: [...assistantContent] }
-                  : msg
-              ));
+              setMessages(prev => [...prev, errorMessage]);
             } else if (data.text) {
               // Accumulate text chunks - find the last text item or create new one
               const lastItem = assistantContent[assistantContent.length - 1];
