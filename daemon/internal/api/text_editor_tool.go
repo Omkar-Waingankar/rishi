@@ -40,7 +40,12 @@ func (c *textEditorController) view(input textEditorViewInput) textEditorViewOut
 	relativePath := input.Path
 	viewRange := input.ViewRange
 
-	// TODO: validate these inputs, check if file exists, etc.
+	// TODO: check if file exists, etc.
+	if input.Path == "" {
+		return textEditorViewOutput{
+			Error: "Path is required",
+		}
+	}
 
 	absolutePath := filepath.Join(c.safeRoot, relativePath)
 	var result bytes.Buffer
