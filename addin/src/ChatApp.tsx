@@ -84,59 +84,81 @@ const ChatApp: React.FC = () => {
   const [safeRootError, setSafeRootError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Check safe root on app startup
-  useEffect(() => {
-    const checkSafeRoot = async () => {
-      try {
-        const response = await fetch('http://localhost:8082/safe_root', {
-          method: 'GET',
-          headers: {
-            'Authorization': 'Bearer tibble-dev-local-please-change',
-          },
-        });
+  const checkSafeRoot = async () => {
+    try {
+      const response = await fetch('http://localhost:8082/safe_root', {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Bearer tibble-dev-local-please-change',
+        },
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          setSafeRoot(data.safe_root);
-          setSafeRootError(null);
-        } else {
-          const errorData = await response.json();
-          const errorMessage = errorData.error || 'Failed to get safe root';
-          setSafeRootError(errorMessage);
-          setSafeRoot(null);
-          
-          // Add error message to chat
-          const safeRootErrorMessage: Message = {
-            id: Date.now() + 1000,
-            sender: 'assistant',
-            timestamp: new Date(),
-            content: [{
-              type: 'error',
-              content: `⚠️ Tibbl requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console`
-            }]
-          };
-          setMessages(prev => [...prev, safeRootErrorMessage]);
-        }
-      } catch (error) {
-        console.error('Error checking safe root:', error);
-        const errorMessage = 'Failed to connect to tool server';
+      if (response.ok) {
+        const data = await response.json();
+        setSafeRoot(data.safe_root);
+        setSafeRootError(null);
+        
+        // Remove any existing safe root error messages from chat
+        setMessages(prev => prev.filter(msg => 
+          !(msg.sender === 'assistant' && 
+            msg.content.some(c => c.type === 'safe_root_error'))
+        ));
+      } else {
+        const errorData = await response.json();
+        const errorMessage = errorData.error || 'Failed to get safe root';
         setSafeRootError(errorMessage);
         setSafeRoot(null);
         
-        // Add error message to chat
+        // Add error message to chat with refresh link
         const safeRootErrorMessage: Message = {
           id: Date.now() + 1000,
           sender: 'assistant',
           timestamp: new Date(),
           content: [{
-            type: 'error',
-            content: `⚠️ Tibbl requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console`
+            type: 'safe_root_error',
+            content: `⚠️ Tibbl requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console\n\nThen click refresh here to continue.`,
+            refreshAction: checkSafeRoot
           }]
         };
-        setMessages(prev => [...prev, safeRootErrorMessage]);
+        setMessages(prev => {
+          // Remove any existing safe root error messages first
+          const filtered = prev.filter(msg => 
+            !(msg.sender === 'assistant' && 
+              msg.content.some(c => c.type === 'safe_root_error'))
+          );
+          return [...filtered, safeRootErrorMessage];
+        });
       }
-    };
+    } catch (error) {
+      console.error('Error checking safe root:', error);
+      const errorMessage = 'Failed to connect to tool server';
+      setSafeRootError(errorMessage);
+      setSafeRoot(null);
+      
+      // Add error message to chat with refresh link
+      const safeRootErrorMessage: Message = {
+        id: Date.now() + 1000,
+        sender: 'assistant',
+        timestamp: new Date(),
+        content: [{
+          type: 'safe_root_error',
+          content: `⚠️ Tibbl requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console\n\nThen click refresh here to continue.`,
+          refreshAction: checkSafeRoot
+        }]
+      };
+      setMessages(prev => {
+        // Remove any existing safe root error messages first
+        const filtered = prev.filter(msg => 
+          !(msg.sender === 'assistant' && 
+            msg.content.some(c => c.type === 'safe_root_error'))
+        );
+        return [...filtered, safeRootErrorMessage];
+      });
+    }
+  };
 
+  // Check safe root on app startup
+  useEffect(() => {
     checkSafeRoot();
   }, []);
 

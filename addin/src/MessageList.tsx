@@ -44,7 +44,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
         // or if it's not the most recent assistant message
         const isLastAssistantMessage = message.sender === 'assistant' && 
           index === messages.length - 1;
-        const hasErrorContent = message.content.some(item => item.type === 'error');
+        const hasErrorContent = message.content.some(item => item.type === 'error' || item.type === 'safe_root_error');
         const showFooter = message.sender === 'assistant' && 
           !hasErrorContent &&
           (!isLoading || !isLastAssistantMessage);
@@ -57,6 +57,23 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
                   {message.content.map((item, index) => (
                     item.type === 'error' ? (
                       <div key={index} className="error-content">{item.content}</div>
+                    ) : item.type === 'safe_root_error' ? (
+                      <div key={index} className="error-content">
+                        {item.content.split('here').map((part, i) => (
+                          i === 0 ? part : (
+                            <React.Fragment key={i}>
+                              <button 
+                                className="refresh-link" 
+                                onClick={item.refreshAction}
+                                aria-label="Refresh directory check"
+                              >
+                                here
+                              </button>
+                              {part}
+                            </React.Fragment>
+                          )
+                        ))}
+                      </div>
                     ) : item.type === 'text' ? (
                         <ReactMarkdown
                           key={index}

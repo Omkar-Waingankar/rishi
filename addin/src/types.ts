@@ -1,7 +1,7 @@
 import { ToolCallStatus } from './tool_types';
 
 interface MessageContent {
-  type: 'text' | 'tool_call' | 'error';
+  type: 'text' | 'tool_call' | 'error' | 'safe_root_error';
   content: string;
   toolCall?: {
     name: string;
@@ -9,6 +9,7 @@ interface MessageContent {
     input?: object;
     result?: string;
   };
+  refreshAction?: () => void;
 }
 
 export interface Message {

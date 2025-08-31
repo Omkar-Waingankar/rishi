@@ -289,6 +289,25 @@
   font-style: normal;
 }
 
+/* Safe Root Refresh Link */
+.refresh-link {
+  background: none;
+  border: none;
+  color: var(--accent-violet);
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  padding: 0;
+  margin: 0;
+  transition: color 0.2s ease;
+}
+
+.refresh-link:hover {
+  color: #8A47D1;
+}
+
 /* Error and Warning Messages */
 .message.error .message-content {
   background: rgba(251, 191, 36, 0.08) !important;
