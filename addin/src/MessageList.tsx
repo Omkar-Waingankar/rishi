@@ -6,6 +6,7 @@ import { MessageListProps, Message } from './types';
 const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
+  const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
 
 
   const scrollToBottom = () => {
@@ -29,6 +30,44 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
   const handleReviewChanges = () => {
     // This would integrate with RStudio's diff viewer
     console.log('Review changes clicked');
+  };
+
+  const toggleErrorExpansion = (errorId: string) => {
+    setExpandedErrors(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(errorId)) {
+        newSet.delete(errorId);
+      } else {
+        newSet.add(errorId);
+      }
+      return newSet;
+    });
+  };
+
+  const renderCollapsibleError = (content: string, errorId: string) => {
+    const isExpanded = expandedErrors.has(errorId);
+    const MAX_LENGTH = 200; // Characters to show when collapsed
+    
+    if (content.length <= MAX_LENGTH) {
+      return <div className="error-content">{content}</div>;
+    }
+
+    const truncatedContent = content.substring(0, MAX_LENGTH) + '...';
+    
+    return (
+      <div className="error-content">
+        <div className="collapsible-error">
+          {isExpanded ? content : truncatedContent}
+          <button 
+            className="expand-toggle" 
+            onClick={() => toggleErrorExpansion(errorId)}
+            aria-label={isExpanded ? "Show less" : "Show more"}
+          >
+            {isExpanded ? ' Show less' : ' See more'}
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -56,7 +95,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
                 <div>
                   {message.content.map((item, index) => (
                     item.type === 'error' ? (
-                      <div key={index} className="error-content">{item.content}</div>
+                      renderCollapsibleError(item.content, `${message.id}-${index}`)
                     ) : item.type === 'safe_root_error' ? (
                       <div key={index} className="error-content">
                         {item.content.split('here').map((part, i) => (

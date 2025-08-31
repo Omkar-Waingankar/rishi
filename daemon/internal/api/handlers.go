@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/rs/zerolog/log"
@@ -148,7 +149,19 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		for stream.Next() {
 			event := stream.Current()
 			if err := message.Accumulate(event); err != nil {
-				_ = json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+				log.Error().Err(err).Msg("message accumulation error")
+
+				// Parse accumulation errors
+				errorMsg := err.Error()
+				var friendlyMsg string
+
+				if strings.Contains(errorMsg, "overloaded_error") || strings.Contains(errorMsg, "Overloaded") {
+					friendlyMsg = "Claude is currently experiencing high demand. Please try again in a few moments."
+				} else {
+					friendlyMsg = fmt.Sprintf("Error processing response: %v", err)
+				}
+
+				_ = json.NewEncoder(w).Encode(map[string]any{"error": friendlyMsg})
 				flusher.Flush()
 				break
 			}
@@ -166,7 +179,18 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		// Check for streaming errors
 		if err := stream.Err(); err != nil {
 			log.Error().Err(err).Msg("streaming error occurred")
-			_ = json.NewEncoder(w).Encode(map[string]any{"error": fmt.Sprintf("streaming error: %v", err)})
+
+			// Parse common Anthropic API errors to provide user-friendly messages
+			errorMsg := err.Error()
+			var friendlyMsg string
+
+			if strings.Contains(errorMsg, "overloaded_error") || strings.Contains(errorMsg, "Overloaded") {
+				friendlyMsg = "Claude is currently experiencing high demand. Please try again in a few moments."
+			} else {
+				friendlyMsg = fmt.Sprintf("Claude encountered an error: %v", err)
+			}
+
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": friendlyMsg})
 			flusher.Flush()
 			return
 		}

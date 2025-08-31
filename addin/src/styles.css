@@ -327,6 +327,36 @@
   white-space: pre-wrap;
 }
 
+.error-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.collapsible-error {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+.expand-toggle {
+  background: none;
+  border: none;
+  color: var(--accent-violet);
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  padding: 0;
+  margin-left: 4px;
+  transition: color 0.2s ease;
+}
+
+.expand-toggle:hover {
+  color: #8A47D1;
+}
+
 .message.warning .message-content {
   background: rgba(251, 191, 36, 0.08) !important;
   border: 1px solid rgba(251, 191, 36, 0.2) !important;

@@ -10,6 +10,7 @@ interface MessageContent {
     result?: string;
   };
   refreshAction?: () => void;
+  isExpanded?: boolean;
 }
 
 export interface Message {
