@@ -42,6 +42,7 @@ func (c *textEditorController) view(input textEditorViewInput) textEditorViewOut
 
 	// TODO: check if file exists, etc.
 	if input.Path == "" {
+		log.Error().Msg("Path is required")
 		return textEditorViewOutput{
 			Error: "Path is required",
 		}

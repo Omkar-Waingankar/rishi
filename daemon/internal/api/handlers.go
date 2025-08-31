@@ -228,8 +228,18 @@ Otherwise, follow debugging best practices:
 				case "str_replace_based_edit_tool":
 					var input textEditorInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
-						errMsg := fmt.Sprintf("Failed to parse read_file input: %s, error: %v", variant.JSON.Input.Raw(), err)
+						errMsg := fmt.Sprintf("Failed to parse text editor input: %s, error: %v", variant.JSON.Input.Raw(), err)
 						log.Error().Err(err).Msgf(errMsg)
+						response = textEditorViewOutput{
+							Error: errMsg,
+						}
+						break
+					}
+
+					// Validate required fields
+					if input.Command == "" {
+						errMsg := "Error: Missing required 'command' field. The text editor tool requires a 'command' parameter. Available commands: 'view' (to read files/directories). Example: {\"command\": \"view\", \"path\": \"filename.txt\"}"
+						log.Error().Msg(errMsg)
 						response = textEditorViewOutput{
 							Error: errMsg,
 						}
@@ -261,6 +271,8 @@ Otherwise, follow debugging best practices:
 
 				log.Info().Msgf("tool call completed: %s, result length: %d, result: %s", block.Name, len(string(b)), string(b)[:min(100, len(string(b)))])
 
+				var isError bool
+
 				// Stream tool call completion event to frontend
 				switch block.Name {
 				case "str_replace_based_edit_tool":
@@ -270,7 +282,7 @@ Otherwise, follow debugging best practices:
 						log.Error().Err(err).Msgf(errMsg)
 					}
 
-					switch response.(type) {
+					switch response := response.(type) {
 					case textEditorViewOutput:
 						_ = json.NewEncoder(w).Encode(map[string]any{
 							"tool_call": map[string]any{
@@ -281,12 +293,16 @@ Otherwise, follow debugging best practices:
 							},
 						})
 						flusher.Flush()
+
+						if response.Error != "" {
+							isError = true
+						}
 					}
 				}
 
-				msgs = append(msgs, anthropic.NewAssistantMessage(anthropic.NewToolUseBlock(block.ID, variant.JSON.Input, block.Name)))
+				msgs = append(msgs, anthropic.NewAssistantMessage(anthropic.NewToolUseBlock(block.ID, json.RawMessage(variant.JSON.Input.Raw()), block.Name)))
 
-				toolResults = append(toolResults, anthropic.NewToolResultBlock(block.ID, string(b), false))
+				toolResults = append(toolResults, anthropic.NewToolResultBlock(block.ID, string(b), isError))
 				msgs = append(msgs, anthropic.NewUserMessage(toolResults...))
 			}
 		}
