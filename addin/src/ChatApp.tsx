@@ -101,13 +101,39 @@ const ChatApp: React.FC = () => {
           setSafeRootError(null);
         } else {
           const errorData = await response.json();
-          setSafeRootError(errorData.error || 'Failed to get safe root');
+          const errorMessage = errorData.error || 'Failed to get safe root';
+          setSafeRootError(errorMessage);
           setSafeRoot(null);
+          
+          // Add error message to chat
+          const safeRootErrorMessage: Message = {
+            id: Date.now() + 1000,
+            sender: 'assistant',
+            timestamp: new Date(),
+            content: [{
+              type: 'error',
+              content: `⚠️ Tibbl requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console`
+            }]
+          };
+          setMessages(prev => [...prev, safeRootErrorMessage]);
         }
       } catch (error) {
         console.error('Error checking safe root:', error);
-        setSafeRootError('Failed to connect to tool server');
+        const errorMessage = 'Failed to connect to tool server';
+        setSafeRootError(errorMessage);
         setSafeRoot(null);
+        
+        // Add error message to chat
+        const safeRootErrorMessage: Message = {
+          id: Date.now() + 1000,
+          sender: 'assistant',
+          timestamp: new Date(),
+          content: [{
+            type: 'error',
+            content: `⚠️ Tibbl requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console`
+          }]
+        };
+        setMessages(prev => [...prev, safeRootErrorMessage]);
       }
     };
 
@@ -347,22 +373,10 @@ const ChatApp: React.FC = () => {
         <h2>Tibbl</h2>
       </div>
       <MessageList messages={messages} isLoading={isStreaming} />
-      {safeRootError && (
-        <div className="safe-root-dialog">
-          <div className="safe-root-message">
-            <h3>⚠️ Active Directory Required</h3>
-            <p>{safeRootError}</p>
-            <p>Please set your active directory by:</p>
-            <ul>
-              <li>Opening an RStudio project (.Rproj file), or</li>
-              <li>Using <code>setwd("/path/to/your/project")</code> in the R console</li>
-            </ul>
-          </div>
-        </div>
-      )}
       <InputBox 
         onSendMessage={handleSendMessage} 
         disabled={isStreaming || !safeRoot}
+        isStreaming={isStreaming}
         onStopStreaming={handleStopStreaming}
         safeRoot={safeRoot}
       />

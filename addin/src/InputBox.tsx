@@ -7,7 +7,7 @@ interface DropdownOption {
   label: string;
 }
 
-const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, onStopStreaming, safeRoot }) => {
+const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreaming, onStopStreaming, safeRoot }) => {
   const [message, setMessage] = useState<string>('');
   const [selectedModel, setSelectedModel] = useState<string>('claude-3.5-sonnet');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -83,7 +83,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, onStopStre
               options={modelOptions}
             />
             
-            {disabled ? (
+            {isStreaming ? (
               <button 
                 type="button"
                 onClick={onStopStreaming}

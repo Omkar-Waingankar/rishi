@@ -35,6 +35,21 @@ compute_safe_root <- function() {
 # Global variables for the server
 .tool_rpc_token <- "tibble-dev-local-please-change"
 
+#' CORS filter for tool RPC
+#' @filter cors
+cors_filter <- function(req, res) {
+  res$setHeader("Access-Control-Allow-Origin", "*")
+  res$setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+  res$setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+  
+  if (req$REQUEST_METHOD == "OPTIONS") {
+    res$status <- 200
+    return(list())
+  }
+  
+  plumber::forward()
+}
+
 #' Authentication filter for tool RPC
 #' @filter auth
 auth_filter <- function(req, res) {
@@ -232,6 +247,7 @@ startToolRPC <- function() {
   
   # Create plumber API programmatically
   pr <- plumber::pr() %>%
+    plumber::pr_filter("cors", cors_filter) %>%
     plumber::pr_filter("auth", auth_filter) %>%
     plumber::pr_get("/healthz", healthz_endpoint) %>%
     plumber::pr_get("/safe_root", safe_root_endpoint) %>%
