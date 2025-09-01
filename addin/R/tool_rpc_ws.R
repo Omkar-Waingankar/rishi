@@ -3,37 +3,20 @@
 #' This server establishes a WebSocket connection to the cloud Go backend
 #' and handles file operation requests via WebSocket messages.
 
-# Import required packages
-# Note: websocket and jsonlite are imported via DESCRIPTION file
-
 # WebSocket connection environment to avoid locked binding issues
 .ws_env <- new.env()
 .ws_env$connection <- NULL
-.ws_env$token <- "tibble-dev-local-please-change"
+.ws_env$token <- if (Sys.getenv("TIBBL_TOKEN") != "") Sys.getenv("TIBBL_TOKEN") else "tibble-dev-local-please-change"
 
 #' Text Editor View Implementation
 #' 
-#' Implements the view command exactly as the Go implementation does
-#' @param input List containing command, path, and optional view_range
-#' @return List with content or error
-text_editor_view_ws <- function(input) {
-  # This function is used by external code for backward compatibility
-  # All actual processing happens in text_editor_view_local when requests come from Go
-  return(text_editor_view_local(input))
-}
-
-#' Local Text Editor View Implementation (Fallback)
-#' 
-#' Local implementation when WebSocket is not available
+#' Implements the view command for both WebSocket and local usage
 #' @param input List containing path and optional view_range
 #' @return List with content or error
-text_editor_view_local <- function(input) {
+text_editor_view <- function(input) {
   # Check if path is missing
   if (is.null(input$path) || input$path == "") {
-    return(list(
-      content = "",
-      error = "Path is required"
-    ))
+    return(text_editor_view_tool_result(error = "Path is required"))
   }
   
   relative_path <- input$path
@@ -42,10 +25,7 @@ text_editor_view_local <- function(input) {
   # Get safe root
   safe_root <- compute_safe_root()
   if (safe_root == "You are not allowed to list files from root") {
-    return(list(
-      content = "",
-      error = safe_root
-    ))
+    return(text_editor_view_tool_result(error = safe_root))
   }
   
   # Build absolute path
@@ -54,18 +34,12 @@ text_editor_view_local <- function(input) {
   
   # Check if path is within safe root
   if (!startsWith(absolute_path, safe_root)) {
-    return(list(
-      content = "",
-      error = "Path outside safe root"
-    ))
+    return(text_editor_view_tool_result(error = "Path outside safe root"))
   }
   
   # Stat the file/directory
   if (!file.exists(absolute_path)) {
-    return(list(
-      content = "",
-      error = "Failed to stat file"
-    ))
+    return(text_editor_view_tool_result(error = "Failed to stat file"))
   }
   
   file_info <- file.info(absolute_path)
@@ -89,10 +63,7 @@ text_editor_view_local <- function(input) {
         }
       }
     }, error = function(e) {
-      return(list(
-        content = "",
-        error = "Failed to read directory"
-      ))
+      return(text_editor_view_tool_result(error = "Failed to read directory"))
     })
   } else {
     # Read file contents
@@ -117,17 +88,11 @@ text_editor_view_local <- function(input) {
         }
       }
     }, error = function(e) {
-      return(list(
-        content = "",
-        error = "Failed to read file"
-      ))
+      return(text_editor_view_tool_result(error = "Failed to read file"))
     })
   }
   
-  return(list(
-    content = result,
-    error = ""
-  ))
+  return(text_editor_view_tool_result(content = result))
 }
 
 #' Handle incoming WebSocket messages
@@ -145,7 +110,7 @@ handle_ws_message <- function(message) {
       if (!is.null(tool_name) && (tool_name == "text_editor" || tool_name == "str_replace_based_edit_tool")) {
         if (!is.null(data$command) && data$command == "view" && !is.null(data$input)) {
           # Handle view command with local implementation
-          result <- text_editor_view_local(data$input)
+          result <- text_editor_view(data$input)
           
           # Send response back with general structure
           response <- list(
@@ -174,10 +139,7 @@ handle_ws_message <- function(message) {
       error_response <- list(
         id = data$id,
         type = "tool_response",
-        result = list(
-          content = "",
-          error = paste("Internal error:", e$message)
-        )
+        result = text_editor_view_tool_result(error = paste("Internal error:", e$message))
       )
       .ws_env$connection$send(jsonlite::toJSON(error_response, auto_unbox = TRUE))
     }
