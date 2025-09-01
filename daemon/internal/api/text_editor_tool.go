@@ -22,6 +22,7 @@ type textEditorController struct {
 type textEditorInput struct {
 	Command TextEditorCommand `json:"command"`
 	textEditorViewInput
+	// Future: Add other command inputs here
 }
 
 type textEditorViewInput struct {
