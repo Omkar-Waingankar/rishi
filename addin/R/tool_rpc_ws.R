@@ -11,41 +11,6 @@
 .ws_env$connection <- NULL
 .ws_env$token <- "tibble-dev-local-please-change"
 
-#' Compute safe root directory for file operations
-#' 
-#' @return Character string of safe root directory or error message
-compute_safe_root_ws <- function() {
-  # Try to get project root from RStudio API
-  project_root <- tryCatch({
-    rstudioapi::getActiveProject()
-  }, error = function(e) {
-    NULL
-  })
-  
-  # Fallback to current working directory if no project
-  if (is.null(project_root)) {
-    project_root <- getwd()
-  }
-  
-  # Normalize the path
-  project_root <- normalizePath(project_root, winslash = "/", mustWork = FALSE)
-  
-  # Check if path resolves to home directory or system root
-  home_dir <- normalizePath("~", winslash = "/", mustWork = FALSE)
-  
-  # Check for system root patterns
-  is_root <- grepl("^/$", project_root) ||  # Unix root
-             grepl("^[A-Za-z]:/$", project_root) ||  # Windows root (C:/, D:/, etc.)
-             identical(project_root, home_dir)  # Home directory
-  
-  if (is_root) {
-    return("You are not allowed to list files from root")
-  }
-  
-  return(project_root)
-}
-
-
 #' Text Editor View Implementation
 #' 
 #' Implements the view command exactly as the Go implementation does
@@ -75,7 +40,7 @@ text_editor_view_local <- function(input) {
   view_range <- input$view_range
   
   # Get safe root
-  safe_root <- compute_safe_root_ws()
+  safe_root <- compute_safe_root()
   if (safe_root == "You are not allowed to list files from root") {
     return(list(
       content = "",
@@ -175,8 +140,9 @@ handle_ws_message <- function(message) {
     
     # Check if it's a tool request (from Go backend to R)
     if (!is.null(data$type) && data$type == "tool_request") {
-      # Handle text_editor tool
-      if (!is.null(data$tool) && data$tool == "text_editor") {
+      # Handle both text_editor and str_replace_based_edit_tool
+      tool_name <- data$tool
+      if (!is.null(tool_name) && (tool_name == "text_editor" || tool_name == "str_replace_based_edit_tool")) {
         if (!is.null(data$command) && data$command == "view" && !is.null(data$input)) {
           # Handle view command with local implementation
           result <- text_editor_view_local(data$input)
@@ -185,7 +151,7 @@ handle_ws_message <- function(message) {
           response <- list(
             id = data$id,
             type = "tool_response",
-            tool = data$tool,
+            tool = tool_name,
             command = data$command,
             result = result
           )
