@@ -16,8 +16,9 @@ tibblAddin <- function() {
   # Start a simple HTTP server to serve the React app
   server_port <- startLocalServer(www_dir)
   
-  # Start the Tool RPC server
+  # Start the Tool RPC server (HTTP for frontend) AND WebSocket connection  
   startToolRPC()
+  startToolRPCWebSocket()
   
   # Open in RStudio viewer pane
   viewer_url <- paste0("http://127.0.0.1:", server_port, "/index.html")

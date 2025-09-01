@@ -14,7 +14,8 @@ Imports:
     httpuv,
     tools,
     plumber,
-    jsonlite
+    jsonlite,
+    websocket
 Suggests:
     knitr,
     rmarkdown

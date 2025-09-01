@@ -1,10 +1,7 @@
 package api
 
 import (
-	"bytes"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/rs/zerolog/log"
 )
@@ -18,7 +15,8 @@ const (
 )
 
 type textEditorController struct {
-	safeRoot string
+	safeRoot  string
+	wsManager *WebSocketManager
 }
 
 type textEditorInput struct {
@@ -37,82 +35,21 @@ type textEditorViewOutput struct {
 }
 
 func (c *textEditorController) view(input textEditorViewInput) textEditorViewOutput {
-	relativePath := input.Path
-	viewRange := input.ViewRange
-
-	// TODO: check if file exists, etc.
-	if input.Path == "" {
-		log.Error().Msg("Path is required")
-		return textEditorViewOutput{
-			Error: "Path is required",
-		}
-	}
-
-	absolutePath := filepath.Join(c.safeRoot, relativePath)
-	var result bytes.Buffer
-
-	info, err := os.Stat(absolutePath)
+	// Forward the request to the R server via WebSocket with proper struct
+	response, err := c.wsManager.sendTextEditorCommand(input)
 	if err != nil {
-		log.Error().Err(err).Msgf("failed to stat file '%s'", relativePath)
+		log.Error().Err(err).Msg("Failed to send text editor command to R server")
 		return textEditorViewOutput{
-			Error: "Failed to stat file",
+			Error: fmt.Sprintf("Failed to communicate with R server: %v", err),
 		}
 	}
 
-	if info.IsDir() {
-		// List directory contents
-		entries, err := os.ReadDir(absolutePath)
-		if err != nil {
-			log.Error().Err(err).Msgf("failed to read directory '%s'", relativePath)
-			return textEditorViewOutput{
-				Error: "Failed to read directory",
-			}
-		}
-
-		result.WriteString(fmt.Sprintf("Directory listing for '%s':\n", relativePath))
-
-		for _, entry := range entries {
-			name := entry.Name()
-			if entry.IsDir() {
-				// Mark directories with trailing slash
-				result.WriteString(fmt.Sprintf("%s/\n", name))
-			} else {
-				result.WriteString(fmt.Sprintf("%s\n", name))
-			}
-		}
-	} else {
-		// Read the file contents
-		content, err := os.ReadFile(absolutePath)
-		if err != nil {
-			log.Error().Err(err).Msgf("failed to read file '%s'", relativePath)
-			return textEditorViewOutput{
-				Error: "Failed to read file",
-			}
-		}
-
-		// Convert content to string and split into lines
-		lines := bytes.Split(content, []byte("\n"))
-
-		// Determine which lines to include based on viewRange
-		startLine := 1
-		endLine := len(lines)
-
-		if len(viewRange) == 2 {
-			startLine = viewRange[0]
-			endLine = viewRange[1]
-		}
-
-		// Build the result with line numbers
-		result.WriteString(fmt.Sprintf("File contents for '%s':\n", relativePath))
-
-		for i := startLine - 1; i < endLine; i++ {
-			lineNum := i + 1
-			lineContent := string(lines[i])
-			result.WriteString(fmt.Sprintf("%d: %s\n", lineNum, lineContent))
+	// Response is already the correct type!
+	if response == nil {
+		return textEditorViewOutput{
+			Error: "No response from R server",
 		}
 	}
 
-	return textEditorViewOutput{
-		Content: result.String(),
-	}
+	return *response
 }

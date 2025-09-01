@@ -153,7 +153,8 @@ Otherwise, follow debugging best practices:
 		{OfTextEditor20250728: &anthropic.ToolTextEditor20250728Param{}},
 	}
 	textEditorController := textEditorController{
-		safeRoot: in.SafeRoot,
+		safeRoot:  in.SafeRoot,
+		wsManager: s.wsManager,
 	}
 
 	for {
