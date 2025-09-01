@@ -239,27 +239,13 @@ handle_ws_message <- function(message) {
     # Parse the JSON message
     data <- jsonlite::fromJSON(message)
     
-    # Debug: Print received message structure
-    cat("🔍 Received WebSocket message:\n")
-    cat("  Type:", data$type, "\n")
-    if (!is.null(data$tool)) cat("  Tool:", data$tool, "\n")
-    if (!is.null(data$command)) cat("  Command:", data$command, "\n")
-    if (!is.null(data$input)) {
-      cat("  Input structure:\n")
-      str(data$input)
-    }
-    
     # Check if it's a tool request (from Go backend to R)
     if (!is.null(data$type) && data$type == "tool_request") {
       # Handle text_editor tool
       if (!is.null(data$tool) && data$tool == "text_editor") {
         if (!is.null(data$command) && data$command == "view" && !is.null(data$input)) {
-          cat("📝 Processing view command for path:", data$input$path, "\n")
-          
           # Handle view command with local implementation
           result <- text_editor_view_local(data$input)
-          
-          cat("📊 View result - Content length:", nchar(result$content), "Error:", result$error, "\n")
           
           # Send response back with general structure
           response <- list(
@@ -271,9 +257,7 @@ handle_ws_message <- function(message) {
           )
           
           if (!is.null(.ws_env$connection)) {
-            cat("📤 Sending WebSocket response for request ID:", data$id, "\n")
             .ws_env$connection$send(jsonlite::toJSON(response, auto_unbox = TRUE))
-            cat("✅ WebSocket response sent\n")
           } else {
             cat("❌ WebSocket connection is NULL, cannot send response\n")
           }
@@ -313,7 +297,6 @@ handle_ws_message <- function(message) {
 #' @param backend_url URL of the Go backend WebSocket endpoint
 startToolRPCWebSocket <- function(backend_url = "ws://localhost:8080/ws/tools") {
   tryCatch({
-    cat("🔗 Connecting to WebSocket Tool RPC at:", backend_url, "\n")
     
     # Create WebSocket connection with authentication header
     .ws_env$connection <- websocket::WebSocket$new(backend_url, 
@@ -325,8 +308,6 @@ startToolRPCWebSocket <- function(backend_url = "ws://localhost:8080/ws/tools") 
     
     # Set up event handlers
     .ws_env$connection$onOpen(function(event) {
-      cat("✅ WebSocket connection established with backend\n")
-      
       # Send initial handshake
       handshake <- list(
         type = "handshake",

@@ -112,8 +112,6 @@ func (c *WebSocketConnection) readPump(s *ServerClient) {
 			continue
 		}
 
-		log.Info().Str("type", wsMsg.Type).Str("id", wsMsg.ID).Msg("Received WebSocket message")
-
 		// Handle different message types
 		switch wsMsg.Type {
 		case "handshake":
@@ -123,15 +121,9 @@ func (c *WebSocketConnection) readPump(s *ServerClient) {
 
 		case "tool_response":
 			// Handle response from R client
-			log.Info().Str("id", wsMsg.ID).Str("tool", wsMsg.Tool).Str("command", wsMsg.Command).Msg("Processing tool response")
 			if wsMsg.ID != "" && wsMsg.Result != nil {
 				s.wsManager.handleToolResponse(wsMsg.ID, wsMsg.Tool, wsMsg.Command, wsMsg.Result)
-				log.Info().Str("id", wsMsg.ID).Msg("Tool response handled successfully")
-			} else {
-				log.Warn().Str("id", wsMsg.ID).Bool("has_result", wsMsg.Result != nil).Msg("Invalid tool response - missing ID or result")
 			}
-		default:
-			log.Warn().Str("type", wsMsg.Type).Msg("Unknown WebSocket message type")
 		}
 	}
 }
@@ -214,8 +206,6 @@ func (m *WebSocketManager) sendToolCommand(tool, command string, input interface
 	m.pendingRequests[requestID] = responseChan
 	m.requestMu.Unlock()
 
-	log.Info().Str("requestID", requestID).Msg("sendToolCommand: Stored pending request")
-
 	// Create message with general structure
 	msg := WebSocketMessage{
 		ID:      requestID,
@@ -243,7 +233,6 @@ func (m *WebSocketManager) sendToolCommand(tool, command string, input interface
 		return "", err
 	}
 
-	log.Info().Str("requestID", requestID).Msg("sendToolCommand: Message sent successfully")
 	return requestID, nil
 }
 
@@ -271,11 +260,9 @@ func (m *WebSocketManager) sendTextEditorCommand(input textEditorViewInput) (*te
 	select {
 	case response := <-responseChan:
 		cleanup()
-		log.Info().Str("requestID", requestID).Msg("sendTextEditorCommand: Received response successfully")
 		return response, nil
 	case <-time.After(30 * time.Second):
 		cleanup()
-		log.Warn().Str("requestID", requestID).Msg("sendTextEditorCommand: Request timeout")
 		return nil, ErrTimeout
 	}
 }
@@ -287,53 +274,27 @@ func (m *WebSocketManager) handleToolResponse(requestID, tool, command string, r
 	m.requestMu.RUnlock()
 
 	if !exists {
-		log.Warn().Str("requestID", requestID).Msg("handleToolResponse: No pending request found")
 		return
 	}
-	
-	log.Info().Str("requestID", requestID).Msg("handleToolResponse: Found pending request")
 
 	// For text_editor tool
 	if tool == "text_editor" && command == "view" {
 		if typedChan, ok := responseChan.(chan *textEditorViewOutput); ok {
-			log.Info().Str("requestID", requestID).Msg("handleToolResponse: Processing text_editor response")
-			
 			// Convert result to JSON bytes then unmarshal directly into target type
 			jsonBytes, err := json.Marshal(result)
 			if err != nil {
-				log.Error().Err(err).Str("requestID", requestID).Msg("Failed to marshal tool response")
-				select {
-				case typedChan <- &textEditorViewOutput{Error: "Failed to marshal response"}:
-					log.Info().Str("requestID", requestID).Msg("Sent error response to channel")
-				default:
-					log.Warn().Str("requestID", requestID).Msg("Failed to send error response - channel blocked")
-				}
+				typedChan <- &textEditorViewOutput{Error: "Failed to marshal response"}
 				return
 			}
-			
+
 			// Unmarshal directly into the target type
 			var output textEditorViewOutput
 			if err := json.Unmarshal(jsonBytes, &output); err != nil {
-				log.Error().Err(err).Str("requestID", requestID).Msg("Failed to unmarshal tool response")
-				select {
-				case typedChan <- &textEditorViewOutput{Error: "Failed to parse response"}:
-					log.Info().Str("requestID", requestID).Msg("Sent parse error response to channel")
-				default:
-					log.Warn().Str("requestID", requestID).Msg("Failed to send parse error response - channel blocked")
-				}
+				typedChan <- &textEditorViewOutput{Error: "Failed to parse response"}
 				return
 			}
-			
-			log.Info().Str("requestID", requestID).Int("contentLen", len(output.Content)).Str("error", output.Error).Msg("Parsed response successfully")
-			
-			select {
-			case typedChan <- &output:
-				log.Info().Str("requestID", requestID).Msg("Successfully sent response to channel")
-			default:
-				log.Error().Str("requestID", requestID).Msg("Failed to send response - channel blocked or closed")
-			}
-		} else {
-			log.Error().Str("requestID", requestID).Msg("handleToolResponse: Channel type assertion failed")
+
+			typedChan <- &output
 		}
 	}
 	// Future: Add handling for other tools here
