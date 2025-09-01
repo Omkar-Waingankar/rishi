@@ -45,73 +45,6 @@ compute_safe_root_ws <- function() {
   return(project_root)
 }
 
-# Global variables to handle async WebSocket responses
-.pending_requests <- new.env()
-
-#' Send Tool Request via WebSocket
-#' 
-#' Sends a tool request to the Go backend via WebSocket and waits for response
-#' @param tool Tool name (e.g., "text_editor")
-#' @param command Command name (e.g., "view") 
-#' @param input Input data for the command
-#' @return Response from the backend or local fallback
-send_tool_request_ws <- function(tool, command, input) {
-  # Check if WebSocket is connected and ready
-  if (is.null(.ws_env$connection) || 
-      (is.character(.ws_env$connection) && .ws_env$connection == "simulated") ||
-      .ws_env$connection$readyState() != 1) {
-    
-    # Fallback to local implementation
-    if (tool == "text_editor" && command == "view") {
-      return(text_editor_view_local(input))
-    } else {
-      return(list(content = "", error = paste("Tool", tool, command, "not available locally")))
-    }
-  }
-  
-  # Generate unique request ID
-  request_id <- paste0("req_", as.integer(Sys.time() * 1000), "_", 
-                      sample(1000:9999, 1))
-  
-  # Create the WebSocket message
-  message <- list(
-    id = request_id,
-    type = "tool_request",
-    tool = tool,
-    command = command,
-    input = input
-  )
-  
-  # Set up response tracking
-  .pending_requests[[request_id]] <- list(
-    response = NULL,
-    completed = FALSE,
-    start_time = Sys.time()
-  )
-  
-  # Send the message
-  .ws_env$connection$send(jsonlite::toJSON(message, auto_unbox = TRUE))
-  
-  # Wait for response with timeout
-  timeout_seconds <- 30
-  start_time <- Sys.time()
-  
-  while (!.pending_requests[[request_id]]$completed && 
-         difftime(Sys.time(), start_time, units = "secs") < timeout_seconds) {
-    Sys.sleep(0.1)  # Check every 100ms
-  }
-  
-  # Get the response
-  if (.pending_requests[[request_id]]$completed) {
-    response <- .pending_requests[[request_id]]$response
-    rm(list = request_id, envir = .pending_requests)
-    return(response)
-  } else {
-    # Timeout - clean up and return error
-    rm(list = request_id, envir = .pending_requests)
-    return(list(content = "", error = "Request timeout"))
-  }
-}
 
 #' Text Editor View Implementation
 #' 
@@ -119,8 +52,9 @@ send_tool_request_ws <- function(tool, command, input) {
 #' @param input List containing command, path, and optional view_range
 #' @return List with content or error
 text_editor_view_ws <- function(input) {
-  # Use WebSocket if available, otherwise fallback to local
-  return(send_tool_request_ws("text_editor", "view", input))
+  # This function is used by external code for backward compatibility
+  # All actual processing happens in text_editor_view_local when requests come from Go
+  return(text_editor_view_local(input))
 }
 
 #' Local Text Editor View Implementation (Fallback)
@@ -267,14 +201,7 @@ handle_ws_message <- function(message) {
       # Future: Add other tools here
     }
     
-    # Check if it's a tool response (from Go backend back to R)
-    if (!is.null(data$type) && data$type == "tool_response" && !is.null(data$id)) {
-      # Find the pending request
-      if (exists(data$id, envir = .pending_requests)) {
-        .pending_requests[[data$id]]$response <- data$result
-        .pending_requests[[data$id]]$completed <- TRUE
-      }
-    }
+    # Note: R doesn't send tool requests to Go, so no need to handle tool_response
   }, error = function(e) {
     # Send error response
     if (!is.null(.ws_env$connection) && !is.null(data$id)) {
