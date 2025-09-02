@@ -41,6 +41,19 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
     });
   };
 
+  const buildCopyText = (content: any[]) => {
+    return content.map((item, index) => {
+      if (item.type === 'text') {
+        return item.content;
+      } else if (item.type === 'tool_call') {
+        return item.content;
+      } else if (item.type === 'error' || item.type === 'safe_root_error') {
+        return item.content;
+      }
+      return item.content || '';
+    }).join('\n\n');
+  };
+
   const fallbackCopyToClipboard = (text: string) => {
     const textArea = document.createElement('textarea');
     textArea.value = text;
@@ -272,7 +285,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
               <div className="message-actions" role="toolbar" aria-label="Message actions">
                 <button 
                   className="action-button copy-button"
-                  onClick={() => copyToClipboard(message.content.map(c => c.content).join(''))}
+                  onClick={() => copyToClipboard(buildCopyText(message.content))}
                   aria-label="Copy message"
                 >
                   <svg className="action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
