@@ -8,6 +8,215 @@
 .ws_env$connection <- NULL
 .ws_env$token <- if (Sys.getenv("TIBBL_TOKEN") != "") Sys.getenv("TIBBL_TOKEN") else "tibble-dev-local-please-change"
 
+#' Text Editor Str Replace Implementation
+#' 
+#' Implements the str_replace command for both WebSocket and local usage
+#' @param input List containing path, old_str, and new_str
+#' @return List with content or error
+text_editor_str_replace <- function(input) {
+  # Check if required fields are missing
+  if (is.null(input$path) || input$path == "") {
+    return(text_editor_str_replace_tool_result(error = "Path is required"))
+  }
+  if (is.null(input$old_str)) {
+    return(text_editor_str_replace_tool_result(error = "old_str is required"))
+  }
+  if (is.null(input$new_str)) {
+    return(text_editor_str_replace_tool_result(error = "new_str is required"))
+  }
+  
+  relative_path <- input$path
+  old_str <- input$old_str
+  new_str <- input$new_str
+  
+  # Get safe root
+  safe_root <- compute_safe_root()
+  if (safe_root == "You are not allowed to list files from root") {
+    return(text_editor_str_replace_tool_result(error = safe_root))
+  }
+  
+  # Build absolute path
+  absolute_path <- file.path(safe_root, relative_path)
+  absolute_path <- normalizePath(absolute_path, winslash = "/", mustWork = FALSE)
+  
+  # Check if path is within safe root
+  if (!startsWith(absolute_path, safe_root)) {
+    return(text_editor_str_replace_tool_result(error = "Path outside safe root"))
+  }
+  
+  # Check if file exists
+  if (!file.exists(absolute_path)) {
+    return(text_editor_str_replace_tool_result(error = "File not found"))
+  }
+  
+  # Check if path is a directory
+  if (file.info(absolute_path)$isdir) {
+    return(text_editor_str_replace_tool_result(error = "Cannot edit directory"))
+  }
+  
+  tryCatch({
+    # Read file contents
+    content <- readChar(absolute_path, file.info(absolute_path)$size)
+    
+    # Count occurrences of old_str
+    matches <- length(gregexpr(old_str, content, fixed = TRUE)[[1]])
+    if (matches == 0 || (matches == 1 && gregexpr(old_str, content, fixed = TRUE)[[1]][1] == -1)) {
+      return(text_editor_str_replace_tool_result(error = "No match found for replacement"))
+    }
+    if (matches > 1) {
+      return(text_editor_str_replace_tool_result(error = paste("Found", matches, "matches for replacement text. Please provide more specific text to make a unique match.")))
+    }
+    
+    # Perform replacement
+    new_content <- gsub(old_str, new_str, content, fixed = TRUE)
+    
+    # Write back to file
+    writeChar(new_content, absolute_path, eos = NULL)
+    
+    return(text_editor_str_replace_tool_result(content = "Successfully replaced text at exactly one location."))
+    
+  }, error = function(e) {
+    return(text_editor_str_replace_tool_result(error = paste("Failed to replace text:", e$message)))
+  })
+}
+
+#' Text Editor Create Implementation
+#' 
+#' Implements the create command for both WebSocket and local usage
+#' @param input List containing path and file_text
+#' @return List with content or error
+text_editor_create <- function(input) {
+  # Check if required fields are missing
+  if (is.null(input$path) || input$path == "") {
+    return(text_editor_create_tool_result(error = "Path is required"))
+  }
+  if (is.null(input$file_text)) {
+    return(text_editor_create_tool_result(error = "file_text is required"))
+  }
+  
+  relative_path <- input$path
+  file_text <- input$file_text
+  
+  # Get safe root
+  safe_root <- compute_safe_root()
+  if (safe_root == "You are not allowed to list files from root") {
+    return(text_editor_create_tool_result(error = safe_root))
+  }
+  
+  # Build absolute path
+  absolute_path <- file.path(safe_root, relative_path)
+  absolute_path <- normalizePath(absolute_path, winslash = "/", mustWork = FALSE)
+  
+  # Check if path is within safe root
+  if (!startsWith(absolute_path, safe_root)) {
+    return(text_editor_create_tool_result(error = "Path outside safe root"))
+  }
+  
+  # Check if file already exists
+  if (file.exists(absolute_path)) {
+    return(text_editor_create_tool_result(error = "File already exists"))
+  }
+  
+  tryCatch({
+    # Create directory if it doesn't exist
+    dir_path <- dirname(absolute_path)
+    if (!dir.exists(dir_path)) {
+      dir.create(dir_path, recursive = TRUE)
+    }
+    
+    # Write content to file
+    writeChar(file_text, absolute_path, eos = NULL)
+    
+    return(text_editor_create_tool_result(content = paste("Successfully created file:", relative_path)))
+    
+  }, error = function(e) {
+    return(text_editor_create_tool_result(error = paste("Failed to create file:", e$message)))
+  })
+}
+
+#' Text Editor Insert Implementation
+#' 
+#' Implements the insert command for both WebSocket and local usage
+#' @param input List containing path, insert_line, and new_str
+#' @return List with content or error
+text_editor_insert <- function(input) {
+  # Check if required fields are missing
+  if (is.null(input$path) || input$path == "") {
+    return(text_editor_insert_tool_result(error = "Path is required"))
+  }
+  if (is.null(input$insert_line) || !is.numeric(input$insert_line)) {
+    return(text_editor_insert_tool_result(error = "insert_line is required and must be a number"))
+  }
+  if (is.null(input$new_str)) {
+    return(text_editor_insert_tool_result(error = "new_str is required"))
+  }
+  
+  relative_path <- input$path
+  insert_line <- as.integer(input$insert_line)
+  new_str <- input$new_str
+  
+  # Get safe root
+  safe_root <- compute_safe_root()
+  if (safe_root == "You are not allowed to list files from root") {
+    return(text_editor_insert_tool_result(error = safe_root))
+  }
+  
+  # Build absolute path
+  absolute_path <- file.path(safe_root, relative_path)
+  absolute_path <- normalizePath(absolute_path, winslash = "/", mustWork = FALSE)
+  
+  # Check if path is within safe root
+  if (!startsWith(absolute_path, safe_root)) {
+    return(text_editor_insert_tool_result(error = "Path outside safe root"))
+  }
+  
+  # Check if file exists
+  if (!file.exists(absolute_path)) {
+    return(text_editor_insert_tool_result(error = "File not found"))
+  }
+  
+  # Check if path is a directory
+  if (file.info(absolute_path)$isdir) {
+    return(text_editor_insert_tool_result(error = "Cannot edit directory"))
+  }
+  
+  tryCatch({
+    # Read file lines
+    lines <- readLines(absolute_path, warn = FALSE)
+    
+    # Validate insert_line
+    if (insert_line < 0) {
+      return(text_editor_insert_tool_result(error = "insert_line must be >= 0"))
+    }
+    if (insert_line > length(lines)) {
+      return(text_editor_insert_tool_result(error = paste("insert_line", insert_line, "is beyond file length", length(lines))))
+    }
+    
+    # Split new_str by newlines for proper insertion
+    new_lines <- strsplit(new_str, "\n")[[1]]
+    
+    # Insert text at the specified line
+    if (insert_line == 0) {
+      # Insert at the beginning of the file
+      result_lines <- c(new_lines, lines)
+    } else {
+      # Insert after the specified line
+      result_lines <- c(lines[1:insert_line], new_lines, lines[(insert_line + 1):length(lines)])
+    }
+    
+    # Remove any NA lines that might result from empty parts
+    result_lines <- result_lines[!is.na(result_lines)]
+    
+    # Write back to file
+    writeLines(result_lines, absolute_path)
+    
+    return(text_editor_insert_tool_result(content = paste("Successfully inserted text after line", insert_line)))
+    
+  }, error = function(e) {
+    return(text_editor_insert_tool_result(error = paste("Failed to insert text:", e$message)))
+  })
+}
+
 #' Text Editor View Implementation
 #' 
 #' Implements the view command for both WebSocket and local usage
@@ -126,8 +335,62 @@ handle_ws_message <- function(message) {
           } else {
             cat("❌ WebSocket connection is NULL, cannot send response\n")
           }
+        } else if (!is.null(data$command) && data$command == "str_replace" && !is.null(data$input)) {
+          # Handle str_replace command with local implementation
+          result <- text_editor_str_replace(data$input)
+          
+          # Send response back with general structure
+          response <- list(
+            id = data$id,
+            type = "tool_response",
+            tool = tool_name,
+            command = data$command,
+            result = result
+          )
+          
+          if (!is.null(.ws_env$connection)) {
+            .ws_env$connection$send(jsonlite::toJSON(response, auto_unbox = TRUE))
+          } else {
+            cat("❌ WebSocket connection is NULL, cannot send response\n")
+          }
+        } else if (!is.null(data$command) && data$command == "create" && !is.null(data$input)) {
+          # Handle create command with local implementation
+          result <- text_editor_create(data$input)
+          
+          # Send response back with general structure
+          response <- list(
+            id = data$id,
+            type = "tool_response",
+            tool = tool_name,
+            command = data$command,
+            result = result
+          )
+          
+          if (!is.null(.ws_env$connection)) {
+            .ws_env$connection$send(jsonlite::toJSON(response, auto_unbox = TRUE))
+          } else {
+            cat("❌ WebSocket connection is NULL, cannot send response\n")
+          }
+        } else if (!is.null(data$command) && data$command == "insert" && !is.null(data$input)) {
+          # Handle insert command with local implementation
+          result <- text_editor_insert(data$input)
+          
+          # Send response back with general structure
+          response <- list(
+            id = data$id,
+            type = "tool_response",
+            tool = tool_name,
+            command = data$command,
+            result = result
+          )
+          
+          if (!is.null(.ws_env$connection)) {
+            .ws_env$connection$send(jsonlite::toJSON(response, auto_unbox = TRUE))
+          } else {
+            cat("❌ WebSocket connection is NULL, cannot send response\n")
+          }
         }
-        # Future: Add other text_editor commands (create, insert, etc.) here
+        # All text_editor commands have been implemented
       }
       # Future: Add other tools here
     }

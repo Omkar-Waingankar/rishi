@@ -198,12 +198,36 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
                           {item.content}
                         </ReactMarkdown>
                       ) : (
-                        <div key={index} className={`inline-tool-call ${item.toolCall?.status}`}>
-                          {item.content}
-                          {item.toolCall?.status === 'failed' && (
-                            <span className="tool-call-error-indicator" aria-label="Failed">×</span>
-                          )}
-                        </div>
+                        // Use legacy styling for view commands, new box styling for edit commands
+                        item.toolCall?.name === 'view' ? (
+                          <div key={index} className={`inline-tool-call ${item.toolCall?.status}`}>
+                            {item.content}
+                            {item.toolCall?.status === 'failed' && (
+                              <span className="tool-call-error-indicator" aria-label="Failed">×</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div key={index} className={`tool-call-box ${item.toolCall?.status}`}>
+                            <span className="tool-call-text">{item.content}</span>
+                            <div className="tool-call-icon">
+                              {item.toolCall?.status === 'requesting' && (
+                                <div className="spinner"></div>
+                              )}
+                              {item.toolCall?.status === 'completed' && (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="check-icon">
+                                  <polyline points="20,6 9,17 4,12"></polyline>
+                                </svg>
+                              )}
+                              {item.toolCall?.status === 'failed' && (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="error-icon">
+                                  <circle cx="12" cy="12" r="10"></circle>
+                                  <line x1="15" y1="9" x2="9" y2="15"></line>
+                                  <line x1="9" y1="9" x2="15" y2="15"></line>
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                        )
                       )
                     ))}
                   </div>

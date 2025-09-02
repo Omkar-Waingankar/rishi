@@ -6,7 +6,10 @@ import {
   ToolCommand, 
   LegacyToolCommand, 
   ToolCallStatus, 
-  ViewToolInput, 
+  ViewToolInput,
+  StrReplaceToolInput,
+  CreateToolInput,
+  InsertToolInput,
   LegacyReadFileInput, 
   LegacyListFilesInput 
 } from './tool_types';
@@ -26,6 +29,45 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
         return `Failed to view ${displayPath}`;
       } else {
         return `Viewed ${displayPath}`;
+      }
+    }
+    
+    case ToolCommand.STR_REPLACE: {
+      const replaceInput = input as StrReplaceToolInput;
+      const displayPath = replaceInput.path || 'file';
+
+      if (toolCall.status === 'requesting') {
+        return `Editing ${displayPath}`;
+      } else if (toolCall.status === 'failed') {
+        return `Failed to edit ${displayPath}`;
+      } else {
+        return `Edited ${displayPath}`;
+      }
+    }
+    
+    case ToolCommand.CREATE: {
+      const createInput = input as CreateToolInput;
+      const displayPath = createInput.path || 'file';
+
+      if (toolCall.status === 'requesting') {
+        return `Creating ${displayPath}`;
+      } else if (toolCall.status === 'failed') {
+        return `Failed to create ${displayPath}`;
+      } else {
+        return `Created ${displayPath}`;
+      }
+    }
+    
+    case ToolCommand.INSERT: {
+      const insertInput = input as InsertToolInput;
+      const displayPath = insertInput.path || 'file';
+
+      if (toolCall.status === 'requesting') {
+        return `Inserting into ${displayPath}`;
+      } else if (toolCall.status === 'failed') {
+        return `Failed to insert into ${displayPath}`;
+      } else {
+        return `Inserted into ${displayPath}`;
       }
     }
     

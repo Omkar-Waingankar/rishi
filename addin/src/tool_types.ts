@@ -2,9 +2,9 @@
 
 export enum ToolCommand {
   VIEW = 'view',
-  // Future commands can be added here
-  // EDIT = 'edit',
-  // CREATE = 'create',
+  STR_REPLACE = 'str_replace',
+  CREATE = 'create',
+  INSERT = 'insert',
 }
 
 export type ToolCallStatus = 'requesting' | 'completed' | 'failed';
@@ -13,6 +13,23 @@ export type ToolCallStatus = 'requesting' | 'completed' | 'failed';
 export interface ViewToolInput {
   path: string;
   view_range?: [number, number];
+}
+
+export interface StrReplaceToolInput {
+  path: string;
+  old_str: string;
+  new_str: string;
+}
+
+export interface CreateToolInput {
+  path: string;
+  file_text: string;
+}
+
+export interface InsertToolInput {
+  path: string;
+  insert_line: number;
+  new_str: string;
 }
 
 // Output types for different tool commands
@@ -25,7 +42,7 @@ export interface ViewToolOutput {
 export interface ToolCall {
   name: ToolCommand;
   status: ToolCallStatus;
-  input?: ViewToolInput; // Can be extended with union types for other commands
+  input?: ViewToolInput | StrReplaceToolInput | CreateToolInput | InsertToolInput;
   result?: string;
 }
 

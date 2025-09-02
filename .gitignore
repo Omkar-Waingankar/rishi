@@ -3,3 +3,4 @@ daemon/bin
 daemon/.env
 addin/node_modules
 addin/inst/www/chat-app.js*
+INSTRUCTIONS.md

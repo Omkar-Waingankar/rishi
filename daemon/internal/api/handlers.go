@@ -184,17 +184,74 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 					switch input.Command {
 					case ViewCommand:
 						// Stream tool call start event to frontend
+						viewInput := textEditorViewInput{
+							Path:      input.Path,
+							ViewRange: input.ViewRange,
+						}
 						_ = json.NewEncoder(w).Encode(map[string]any{
 							"tool_call": map[string]any{
 								"name":   input.Command,
-								"input":  input.textEditorViewInput,
+								"input":  viewInput,
 								"status": "requesting",
 							},
 						})
 						flusher.Flush()
 
 						// Get response from textEditorController
-						response = textEditorController.view(input.textEditorViewInput)
+						response = textEditorController.view(viewInput)
+					case StrReplaceCommand:
+						// Stream tool call start event to frontend
+						strReplaceInput := textEditorStrReplaceInput{
+							Path:   input.Path,
+							OldStr: input.OldStr,
+							NewStr: input.NewStr,
+						}
+						_ = json.NewEncoder(w).Encode(map[string]any{
+							"tool_call": map[string]any{
+								"name":   input.Command,
+								"input":  strReplaceInput,
+								"status": "requesting",
+							},
+						})
+						flusher.Flush()
+
+						// Get response from textEditorController
+						response = textEditorController.strReplace(strReplaceInput)
+					case CreateCommand:
+						// Stream tool call start event to frontend
+						createInput := textEditorCreateInput{
+							Path:     input.Path,
+							FileText: input.FileText,
+						}
+						_ = json.NewEncoder(w).Encode(map[string]any{
+							"tool_call": map[string]any{
+								"name":   input.Command,
+								"input":  createInput,
+								"status": "requesting",
+							},
+						})
+						flusher.Flush()
+
+						// Get response from textEditorController
+						response = textEditorController.create(createInput)
+					case InsertCommand:
+						// Stream tool call start event to frontend
+						insertInput := textEditorInsertInput{
+							Path:       input.Path,
+							InsertLine: input.InsertLine,
+							NewStr:     input.NewStr,
+						}
+						_ = json.NewEncoder(w).Encode(map[string]any{
+							"tool_call": map[string]any{
+								"name":   input.Command,
+								"input":  insertInput,
+								"status": "requesting",
+							},
+						})
+						flusher.Flush()
+
+						// Get response from textEditorController
+						response = textEditorController.insert(insertInput)
 					}
 				}
 
@@ -222,6 +279,48 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						_ = json.NewEncoder(w).Encode(map[string]any{
 							"tool_call": map[string]any{
 								"name":   ViewCommand,
+								"input":  input,
+								"status": "completed",
+								"result": response,
+							},
+						})
+						flusher.Flush()
+
+						if response.Error != "" {
+							isError = true
+						}
+					case textEditorStrReplaceOutput:
+						_ = json.NewEncoder(w).Encode(map[string]any{
+							"tool_call": map[string]any{
+								"name":   StrReplaceCommand,
+								"input":  input,
+								"status": "completed",
+								"result": response,
+							},
+						})
+						flusher.Flush()
+
+						if response.Error != "" {
+							isError = true
+						}
+					case textEditorCreateOutput:
+						_ = json.NewEncoder(w).Encode(map[string]any{
+							"tool_call": map[string]any{
+								"name":   CreateCommand,
+								"input":  input,
+								"status": "completed",
+								"result": response,
+							},
+						})
+						flusher.Flush()
+
+						if response.Error != "" {
+							isError = true
+						}
+					case textEditorInsertOutput:
+						_ = json.NewEncoder(w).Encode(map[string]any{
+							"tool_call": map[string]any{
+								"name":   InsertCommand,
 								"input":  input,
 								"status": "completed",
 								"result": response,
