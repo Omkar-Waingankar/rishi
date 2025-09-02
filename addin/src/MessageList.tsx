@@ -23,8 +23,43 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
     return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const isInRStudioViewer = () => {
+    return window.location.search.includes('viewer_pane') || 
+           window.location.href.includes('viewer_pane');
+  };
+
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+    // If we're in RStudio viewer or clipboard API is unavailable, use fallback immediately
+    if (isInRStudioViewer() || !navigator.clipboard || !navigator.clipboard.writeText) {
+      fallbackCopyToClipboard(text);
+      return;
+    }
+
+    // Try clipboard API first, fallback on failure
+    navigator.clipboard.writeText(text).catch(() => {
+      fallbackCopyToClipboard(text);
+    });
+  };
+
+  const fallbackCopyToClipboard = (text: string) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      const successful = document.execCommand('copy');
+      if (!successful) {
+        console.warn('Fallback copy method may not have worked');
+      }
+    } catch (err) {
+      console.error('Copy failed:', err);
+    }
+    document.body.removeChild(textArea);
   };
 
   const handleReviewChanges = () => {
