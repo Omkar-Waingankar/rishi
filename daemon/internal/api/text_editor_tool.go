@@ -36,13 +36,16 @@ type textEditorInput struct {
 	
 	// StrReplace-specific fields
 	OldStr string `json:"old_str"`
+	
+	// StrReplace and Insert shared fields
 	NewStr string `json:"new_str"`
 	
 	// Create-specific fields
 	FileText string `json:"file_text"`
 	
 	// Insert-specific fields
-	InsertLine int `json:"insert_line"`
+	InsertLine int    `json:"insert_line"`
+	InsertText string `json:"insert_text"` // Actual field name Anthropic sends (despite docs)
 }
 
 type textEditorViewInput struct {

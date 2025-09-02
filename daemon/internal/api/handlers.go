@@ -236,10 +236,15 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						response = textEditorController.create(createInput)
 					case InsertCommand:
 						// Stream tool call start event to frontend
+						// Handle both field names - docs say new_str but API sends insert_text
+						insertText := input.NewStr
+						if insertText == "" {
+							insertText = input.InsertText
+						}
 						insertInput := textEditorInsertInput{
 							Path:       input.Path,
 							InsertLine: input.InsertLine,
-							NewStr:     input.NewStr,
+							NewStr:     insertText,
 						}
 						_ = json.NewEncoder(w).Encode(map[string]any{
 							"tool_call": map[string]any{
