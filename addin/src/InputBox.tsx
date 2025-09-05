@@ -9,13 +9,13 @@ interface DropdownOption {
 
 const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreaming, onStopStreaming, safeRoot }) => {
   const [message, setMessage] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<string>('claude-3.5-sonnet');
+  const [selectedModel, setSelectedModel] = useState<string>('claude-4-sonnet');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (message.trim() && !disabled) {
-      onSendMessage(message);
+      onSendMessage(message, selectedModel);
       setMessage('');
       if (textareaRef.current) {
         textareaRef.current.style.height = '24px';
@@ -46,9 +46,8 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
   };
 
   const modelOptions: DropdownOption[] = [
-    { value: 'claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' },
-    { value: 'claude-3-haiku', label: 'Claude 3 Haiku' },
-    { value: 'gpt-4', label: 'GPT-4' }
+    { value: 'claude-4-sonnet', label: 'Claude 4 Sonnet' },
+    { value: 'claude-3.7-sonnet', label: 'Claude 3.7 Sonnet' }
   ];
 
   // Load saved model preference on component mount

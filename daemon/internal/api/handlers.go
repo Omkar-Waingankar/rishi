@@ -74,8 +74,28 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 
 	// Start streaming with the official Anthropic SDK
 	model := anthropic.ModelClaudeSonnet4_20250514
-	if in.Model != "" {
-		model = anthropic.Model(in.Model)
+
+	// Check for model in request body first, then X-Model header
+	selectedModel := in.Model
+	if selectedModel == "" {
+		selectedModel = r.Header.Get("X-Model")
+	}
+
+	if selectedModel != "" {
+		// Map model names from frontend to Anthropic SDK models
+		switch selectedModel {
+		case "claude-3.7-sonnet":
+			model = anthropic.ModelClaude3_7SonnetLatest
+			log.Info().Msgf("Using Claude 3.7 Sonnet model")
+		case "claude-4-sonnet":
+			model = anthropic.ModelClaudeSonnet4_20250514
+			log.Info().Msgf("Using Claude 4 Sonnet model")
+		default:
+			// If unknown model, log and use default
+			log.Warn().Msgf("Unknown model requested: %s, using default Claude 4 Sonnet", selectedModel)
+		}
+	} else {
+		log.Info().Msgf("No model specified, using default Claude 4 Sonnet")
 	}
 
 	maxTokens := in.MaxTok
@@ -83,9 +103,13 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		maxTokens = 8192
 	}
 
-	tools := []anthropic.ToolUnionParam{
-		{OfTextEditor20250728: &anthropic.ToolTextEditor20250728Param{}},
+	tools := []anthropic.ToolUnionParam{}
+	if selectedModel == "claude-4-sonnet" {
+		tools = append(tools, anthropic.ToolUnionParam{OfTextEditor20250728: &anthropic.ToolTextEditor20250728Param{}})
+	} else if selectedModel == "claude-3.7-sonnet" {
+		tools = append(tools, anthropic.ToolUnionParam{OfTextEditor20250124: &anthropic.ToolTextEditor20250124Param{}})
 	}
+
 	textEditorController := textEditorController{
 		safeRoot:  in.SafeRoot,
 		wsManager: s.wsManager,

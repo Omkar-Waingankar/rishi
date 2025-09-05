@@ -204,7 +204,7 @@ const ChatApp: React.FC = () => {
     checkSafeRoot();
   }, []);
 
-  const handleSendMessage = async (messageText: string): Promise<void> => {
+  const handleSendMessage = async (messageText: string, selectedModel: string): Promise<void> => {
     if (!messageText.trim()) return;
 
     const userMessage: Message = {
@@ -286,6 +286,7 @@ const ChatApp: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Model': selectedModel
         },
         body: JSON.stringify({ 
           message: messageText,

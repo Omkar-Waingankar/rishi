@@ -16,7 +16,13 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({ value, onChange, disabled
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const selectedOption = options.find(option => option.value === value);
+  let selectedOption = options.find(option => option.value === value);
+  if (!selectedOption) { // Default to Claude 4 Sonnet if no option is selected
+    selectedOption = {
+      value: "claude-4-sonnet",
+      label: "Claude 4 Sonnet"
+    }
+  }
 
   const handleOptionClick = (optionValue: string) => {
     onChange(optionValue);

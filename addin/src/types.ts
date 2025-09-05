@@ -21,7 +21,7 @@ export interface Message {
 }
 
 export interface InputBoxProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, model: string) => void;
   disabled: boolean;
   isStreaming: boolean;
   onStopStreaming: () => void;
