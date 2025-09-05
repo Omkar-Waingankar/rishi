@@ -1,6 +1,6 @@
 
 # Global variables for the server
-.tool_rpc_token <- "tibble-dev-local-please-change"
+.tool_rpc_token <- "rishi-dev-local-please-change"
 
 #' CORS filter for tool RPC
 #' @filter cors

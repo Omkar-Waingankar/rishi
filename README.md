@@ -1,4 +1,4 @@
-# Tibbl
+# Rishi
 
 ## Getting Started
 
@@ -12,11 +12,11 @@
    make run-server
    ```
    The daemon will run on port 8080.
-4. Build and install the Tibbl add-in:
+4. Build and install the Rishi add-in:
    ```bash
    make install-addin
    ```
-5. Open RStudio, then launch the Tibbl add-in from the Addins menu.
+5. Open RStudio, then launch the Rishi add-in from the Addins menu.
    The frontend will run on port 8081.
 
 ---
@@ -24,7 +24,7 @@
 ## Repository Structure
 
 - **addin/**  
-  Contains the Tibbl add-in source code, including the React frontend and R integration.
+  Contains the Rishi add-in source code, including the React frontend and R integration.
 
 - **daemon/**  
   Contains an HTTP backend server that provides AI chat functionality via Anthropic's Claude API. The backend runs on port 8080 and is integrated with the add-in.

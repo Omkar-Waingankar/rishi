@@ -1,4 +1,4 @@
-#' Utility functions shared across the tibblai package
+#' Utility functions shared across the rishiai package
 
 #' Compute safe root directory for file operations
 #' 

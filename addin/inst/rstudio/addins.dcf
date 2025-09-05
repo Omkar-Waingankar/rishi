@@ -1,4 +1,4 @@
-Name: Tibbl
-Description: Tibbl is the "Cursor for R". It is a RStudio add-in providing an agentic AI chat interface for code assistance.
-Binding: tibblAddin
+Name: Rishi
+Description: Rishi is the "Cursor for R". It is a RStudio add-in providing an agentic AI chat interface for code assistance.
+Binding: rishiAddin
 Interactive: true

@@ -1,12 +1,12 @@
 # Context
 
-This is the directory that holds both the frontend for the Tibbl addin as well as critical http and websocket servers written in R. 
+This is the directory that holds both the frontend for the Rishi addin as well as critical http and websocket servers written in R. 
 
 # Directories
 
-- `inst`: You don't really need to worry about this one. It's basically where our final Tibbl frontend gets built. Specifically, `inst/www/chat-app.js`.
+- `inst`: You don't really need to worry about this one. It's basically where our final Rishi frontend gets built. Specifically, `inst/www/chat-app.js`.
 - `R`: This is where we define the entrypoint to our addin, HTTP/websocket servers to provide tool call capabilities to the LLM in our backend, and other R utility files.
-- `src`: This is where the React frontend is defined for our Tibbl chat interface.
+- `src`: This is where the React frontend is defined for our Rishi chat interface.
 
 # Tips for navigating R directory
 

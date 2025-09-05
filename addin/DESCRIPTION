@@ -1,10 +1,10 @@
-Package: tibblai
+Package: rishiai
 Type: Package
-Title: Tibbl
+Title: Rishi
 Version: 0.1.0
 Author: Omkar Waingankar
 Maintainer: Omkar Waingankar <omkarw.work@gmail.com>
-Description: Tibbl is the "Cursor for R". It is a RStudio add-in providing an agentic AI chat interface for code assistance.
+Description: Rishi is the "Cursor for R". It is a RStudio add-in providing an agentic AI chat interface for code assistance.
 License: MIT
 Encoding: UTF-8
 LazyData: true

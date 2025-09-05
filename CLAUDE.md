@@ -1,11 +1,11 @@
 # Context
 
-This repository holds the code for Tibbl, an AI coding agent for R. It is currently in development, and the intention is that it will be packaged as a RStudio Addin for use by any existing RStudio user.
+This repository holds the code for Rishi, an AI coding agent for R. It is currently in development, and the intention is that it will be packaged as a RStudio Addin for use by any existing RStudio user.
 
 # Directories
 
-- `/addin`: This is where the frontend for Tibbl lives (src). It's also where we define both a HTTP server (tool_rpc.R) and a websocket server (tool_rpc_ws.R) to service tool calls made by LLMs to explore files, write code, interact with RStudio, etc. 
-- `daemon`: This is where the backend API server for Tibbl lives. It primarily serves two endpoints: /chat (used by the frontend to have conversations with LLMs) and /ws/tools (a websocket connection used to enable tool calling by the LLMs).
+- `/addin`: This is where the frontend for Rishi lives (src). It's also where we define both a HTTP server (tool_rpc.R) and a websocket server (tool_rpc_ws.R) to service tool calls made by LLMs to explore files, write code, interact with RStudio, etc. 
+- `daemon`: This is where the backend API server for Rishi lives. It primarily serves two endpoints: /chat (used by the frontend to have conversations with LLMs) and /ws/tools (a websocket connection used to enable tool calling by the LLMs).
 
 # Make commands
 
@@ -17,7 +17,7 @@ There are a bunch of Make commands we've defined, but there are only 4 important
 
 # Local development / testing
 
-If I want to use Tibbl in my local dev setup, I first run `make run-server` in one terminal window and then open another terminal window and run `make install-and-launch-addin`. From within the RStudio console, I then run `setwd("~/projects/r-testbed/penguin-analysis")` (Tibbl needs a working directory or .Rproj) followed `by tibblai:::tibblAddin()` to actually launch the addin.
+If I want to use Rishi in my local dev setup, I first run `make run-server` in one terminal window and then open another terminal window and run `make install-and-launch-addin`. From within the RStudio console, I then run `setwd("~/projects/r-testbed/penguin-analysis")` (Rishi needs a working directory or .Rproj) followed `by rishiai:::rishiAddin()` to actually launch the addin.
 
 # Maintenance
 

@@ -1,7 +1,7 @@
-# Makefile for Tibbl add-in with local daemon backend
+# Makefile for Rishi add-in with local daemon backend
 
 GO := go
-BINARY := daemon/bin/tibbl-daemon
+BINARY := daemon/bin/rishi-daemon
 CMD_DIR := ./cmd/server
 ADDIN_DIR := ./addin
 

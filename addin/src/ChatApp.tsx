@@ -117,7 +117,7 @@ const ChatApp: React.FC = () => {
       timestamp: new Date(),
       content: [{
         type: 'text',
-        content: "👋 Hi, I'm Tibbl — your AI assistant for RStudio. Ask me anything about R, code, data, or your project. How can I assist you today?"
+        content: "👋 Hi, I'm Rishi — your AI assistant for RStudio. Ask me anything about R, code, data, or your project. How can I assist you today?"
       }]
     }
   ]);
@@ -131,7 +131,7 @@ const ChatApp: React.FC = () => {
       const response = await fetch('http://localhost:8082/safe_root', {
         method: 'GET',
         headers: {
-          'Authorization': 'Bearer tibble-dev-local-please-change',
+          'Authorization': 'Bearer rishi-dev-local-please-change',
         },
       });
 
@@ -158,7 +158,7 @@ const ChatApp: React.FC = () => {
           timestamp: new Date(),
           content: [{
             type: 'safe_root_error',
-            content: `⚠️ Tibbl requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console\n\nThen click refresh here to continue.`,
+            content: `⚠️ Rishi requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console\n\nThen click refresh here to continue.`,
             refreshAction: checkSafeRoot
           }]
         };
@@ -184,7 +184,7 @@ const ChatApp: React.FC = () => {
         timestamp: new Date(),
         content: [{
           type: 'safe_root_error',
-          content: `⚠️ Tibbl requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console\n\nThen click refresh here to continue.`,
+          content: `⚠️ Rishi requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console\n\nThen click refresh here to continue.`,
           refreshAction: checkSafeRoot
         }]
       };
@@ -418,7 +418,7 @@ const ChatApp: React.FC = () => {
           timestamp: new Date(),
           content: [{
             type: 'error',
-            content: "Could not connect to our server. Please wait or restart Tibbl and try again."
+            content: "Could not connect to our server. Please wait or restart Rishi and try again."
           }]
         };
         setMessages(prev => [...prev, errorMessage]);
@@ -438,7 +438,7 @@ const ChatApp: React.FC = () => {
   return (
     <div className="chat-app">
       <div className="chat-header">
-        <h2>Tibbl</h2>
+        <h2>Rishi</h2>
       </div>
       <MessageList messages={messages} isLoading={isStreaming} />
       <InputBox 

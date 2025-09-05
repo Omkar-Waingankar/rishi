@@ -1,13 +1,13 @@
-#' Launch Tibbl
+#' Launch Rishi
 #'
-#' This function launches the Tibbl chat interface as an RStudio add-in.
+#' This function launches the Rishi chat interface as an RStudio add-in.
 #' The interface provides a chat-based UI for interacting with AI assistance.
 #' Uses rstudioapi::viewer() to keep the R console free for code execution.
 #'
 #' @export
-tibblAddin <- function() {
+rishiAddin <- function() {
   # Get the path to the www directory
-  www_dir <- system.file("www", package = "tibblai")
+  www_dir <- system.file("www", package = "rishiai")
   
   if (!dir.exists(www_dir)) {
     stop("Web assets not found. Make sure to run 'make build-addin' first.")
@@ -26,14 +26,14 @@ tibblAddin <- function() {
   
   # Display ASCII art and welcome message
   cat("\n")
-  cat("  ████████╗██╗██████╗ ██████╗ ██╗     \n")
-  cat("  ╚══██╔══╝██║██╔══██╗██╔══██╗██║     \n")
-  cat("     ██║   ██║██████╔╝██████╔╝██║     \n")
-  cat("     ██║   ██║██╔══██╗██╔══██╗██║     \n")
-  cat("     ██║   ██║██████╔╝██████╔╝███████╗\n")
-  cat("     ╚═╝   ╚═╝╚═════╝ ╚═════╝ ╚══════╝\n")
+  cat("  ██████╗ ██╗███████╗██╗  ██╗██╗\n")
+  cat("  ██╔══██╗██║██╔════╝██║  ██║██║\n")
+  cat("  ██████╔╝██║███████╗███████║██║\n")
+  cat("  ██╔══██╗██║╚════██║██╔══██║██║\n")
+  cat("  ██║  ██║██║███████║██║  ██║██║\n")
+  cat("  ╚═╝  ╚═╝╚═╝╚══════╝╚═╝  ╚═╝╚═╝\n")
   cat("\n")
-  cat("🚀 Ready to transform your R workflow! Visit tibbl.ai to learn more.\n")
+  cat("🚀 Ready to transform your R workflow! Rishi is here to help.\n")
 }
 
 #' Start a simple HTTP server to serve static files

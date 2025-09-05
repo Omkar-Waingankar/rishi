@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// ServerClient hosts HTTP endpoints for the Tibbl backend.
+// ServerClient hosts HTTP endpoints for the Rishi backend.
 type ServerClient struct {
 	anthropicClient anthropic.Client
 	toolRPCToken    string

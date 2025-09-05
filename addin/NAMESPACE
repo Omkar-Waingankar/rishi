@@ -1,4 +1,4 @@
-export(tibblAddin)
+export(rishiAddin)
 import(shiny)
 import(miniUI)
 import(htmltools)

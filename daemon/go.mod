@@ -1,4 +1,4 @@
-module github.com/halliday/tibbl/daemon
+module github.com/halliday/rishi/daemon
 
 go 1.23.1
 

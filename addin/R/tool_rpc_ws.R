@@ -6,7 +6,7 @@
 # WebSocket connection environment to avoid locked binding issues
 .ws_env <- new.env()
 .ws_env$connection <- NULL
-.ws_env$token <- if (Sys.getenv("TIBBL_TOKEN") != "") Sys.getenv("TIBBL_TOKEN") else "tibble-dev-local-please-change"
+.ws_env$token <- if (Sys.getenv("RISHI_TOKEN") != "") Sys.getenv("RISHI_TOKEN") else "rishi-dev-local-please-change"
 
 #' Text Editor Str Replace Implementation
 #' 

@@ -1,10 +1,10 @@
 # Context
 
-This is the directory that holds the backend code for the Tibbl addin. In local development, it is served at port 8080 but in production it will be hosted in the cloud (not deployed yet, but assume at api.tibbl.ai on Render).
+This is the directory that holds the backend code for the Rishi addin. In local development, it is served at port 8080 but in production it will be hosted in the cloud (not deployed yet, but assume at api.rishi.ai on Render).
 
 # Endpoints
 
-There are two mission critical endpoints in the Tibbl backend
+There are two mission critical endpoints in the Rishi backend
 - `/chat`: Our frontend hits this endpoint to allow the user to chat with LLMs. These LLMs have agentic capabilities (they can access tools to interact with RStudio, the end-user's filesystem, web search, etc.) It currently supports only Anthropic Claude Sonnet 4, but our offerings will expand with time. 
 - `/ws/tools`: This exposes a websocket endpoint that our R websocket server (served on the end-user's local machine) connects to in order to bidirectionally service tool calls made by our LLMs, and avoid repeated handshakes that would be required of a HTTP endpoint. For now, we're focused on implementing and supporting just the text_editor tool for Anthropic, but this will expand over time as well. 
 

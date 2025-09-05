@@ -54,7 +54,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 	// Convert history into []anthropic.MessageParam, include system prompt, then append latest user message
 	var msgs []anthropic.MessageParam
 	// Prepend system prompt as a message to keep behavior similar
-	msgs = append(msgs, anthropic.NewUserMessage(anthropic.NewTextBlock(TIBBL_SYSTEM_PROMPT)))
+	msgs = append(msgs, anthropic.NewUserMessage(anthropic.NewTextBlock(RISHI_SYSTEM_PROMPT)))
 	for i, m := range in.History {
 		switch m.Role {
 		case "user":
@@ -80,7 +80,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 
 	maxTokens := in.MaxTok
 	if maxTokens == 0 {
-		maxTokens = 4096
+		maxTokens = 8192
 	}
 
 	tools := []anthropic.ToolUnionParam{
