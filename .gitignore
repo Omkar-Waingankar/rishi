@@ -4,3 +4,4 @@ daemon/.env
 addin/node_modules
 addin/inst/www/chat-app.js*
 instructions
+*CLAUDE.md
