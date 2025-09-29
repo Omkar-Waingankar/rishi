@@ -18,7 +18,6 @@ import (
 type Config struct {
 	AnthropicAPIKey string `envconfig:"ANTHROPIC_API_KEY" required:"true"`
 	HTTPPort        string `envconfig:"HTTP_PORT" default:"8080"`
-	ToolRPCToken    string `envconfig:"TOOL_RPC_TOKEN" required:"true"`
 }
 
 func main() {
@@ -40,7 +39,7 @@ func main() {
 	)
 
 	// Build and start HTTP API server
-	srv := api.NewServerClient(anthropicClient, cfg.ToolRPCToken)
+	srv := api.NewServerClient(anthropicClient)
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf(":%s", cfg.HTTPPort),
 		Handler:           srv.Routes(),

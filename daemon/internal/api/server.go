@@ -10,14 +10,12 @@ import (
 // ServerClient hosts HTTP endpoints for the Rishi backend.
 type ServerClient struct {
 	anthropicClient anthropic.Client
-	toolRPCToken    string
 	wsManager       *WebSocketManager
 }
 
-func NewServerClient(anthropicClient anthropic.Client, toolRPCToken string) *ServerClient {
+func NewServerClient(anthropicClient anthropic.Client) *ServerClient {
 	return &ServerClient{
 		anthropicClient: anthropicClient,
-		toolRPCToken:    toolRPCToken,
 		wsManager:       NewWebSocketManager(),
 	}
 }

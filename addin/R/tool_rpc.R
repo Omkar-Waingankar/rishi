@@ -1,6 +1,4 @@
 
-# Global variables for the server
-.tool_rpc_token <- "rishi-dev-local-please-change"
 
 #' CORS filter for tool RPC
 #' @filter cors
@@ -17,30 +15,6 @@ cors_filter <- function(req, res) {
   plumber::forward()
 }
 
-#' Authentication filter for tool RPC
-#' @filter auth
-auth_filter <- function(req, res) {
-  auth_header <- req$HTTP_AUTHORIZATION
-  
-  if (is.null(auth_header)) {
-    res$status <- 401
-    return(list(error = jsonlite::unbox("Missing Authorization header")))
-  }
-  
-  if (!startsWith(auth_header, "Bearer ")) {
-    res$status <- 401
-    return(list(error = jsonlite::unbox("Invalid Authorization header format")))
-  }
-  
-  token <- substring(auth_header, 8)
-  
-  if (token != .tool_rpc_token) {
-    res$status <- 401
-    return(list(error = jsonlite::unbox("Invalid token")))
-  }
-  
-  plumber::forward()
-}
 
 #' Health check endpoint
 #' @get /healthz
@@ -215,7 +189,6 @@ startToolRPC <- function() {
   # Create plumber API programmatically
   pr <- plumber::pr() %>%
     plumber::pr_filter("cors", cors_filter) %>%
-    plumber::pr_filter("auth", auth_filter) %>%
     plumber::pr_get("/healthz", healthz_endpoint) %>%
     plumber::pr_get("/safe_root", safe_root_endpoint) %>%
     plumber::pr_post("/list", list_files_endpoint) %>%

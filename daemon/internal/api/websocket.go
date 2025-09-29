@@ -53,13 +53,6 @@ func NewWebSocketManager() *WebSocketManager {
 
 // HandleWebSocket handles WebSocket connections
 func (s *ServerClient) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	// Check authorization
-	auth := r.Header.Get("Authorization")
-	if auth != "Bearer "+s.toolRPCToken {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
 	// Upgrade connection
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

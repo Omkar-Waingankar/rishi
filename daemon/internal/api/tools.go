@@ -85,7 +85,6 @@ func (s *ServerClient) makeRPCRequest(method, endpoint string, payload interface
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.toolRPCToken))
 
 	resp, err := rpcClient.Do(req)
 	if err != nil {
