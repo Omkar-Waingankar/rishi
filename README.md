@@ -7,17 +7,16 @@
    ```bash
    export ANTHROPIC_API_KEY="your-api-key-here"
    ```
-3. Start the backend daemon:
+3. Uninstall any existing version of the add-in:
    ```bash
-   make run-server
+   make uninstall-addin
    ```
-   The daemon will run on port 8080.
-4. Build and install the Rishi add-in:
+4. Build and install the Rishi add-in and launch RStudio:
    ```bash
-   make install-addin
+   make up
    ```
 5. Open RStudio, then launch the Rishi add-in from the Addins menu.
-   The frontend will run on port 8081.
+   The backend daemon will be launched automatically by the add-in.
 
 ---
 
@@ -26,7 +25,7 @@
 - **addin/**  
   Contains the Rishi add-in source code, including the React frontend and R integration.
 
-- **daemon/**  
-  Contains an HTTP backend server that provides AI chat functionality via Anthropic's Claude API. The backend runs on port 8080 and is integrated with the add-in.
+- **daemon/**
+  Contains an HTTP backend server that provides AI chat functionality via Anthropic's Claude API. The backend is automatically launched by the add-in.
 
 ---
