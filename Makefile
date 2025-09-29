@@ -1,88 +1,154 @@
-# Makefile for Rishi add-in with local daemon backend
+# Rishi AI RStudio Add-in Makefile
+# Simple build system for local development and distribution
+
+# ==============================================================================
+# Configuration
+# ==============================================================================
+
+PACKAGE_NAME := rishiai
+VERSION := $(shell cat addin/DESCRIPTION | grep Version | cut -d' ' -f2)
+GITHUB_USER := halliday
+REPO_NAME := rstudio-ai-addin
 
 GO := go
-BINARY := daemon/bin/rishi-daemon
-CMD_DIR := ./cmd/server
-ADDIN_DIR := ./addin
+BINARY_NAME := rishi-daemon
+DIST_DIR := dist
+DAEMON_DIR := daemon
+ADDIN_DIR := addin
 
-.PHONY: all build-server run-server start-server clean-server tidy-server fmt-server test-server install-addin build-addin addin-deps addin-dev r-deps install-and-launch-addin
+# Cross-compilation targets
+PLATFORMS := linux/amd64 darwin/amd64 darwin/arm64 windows/amd64
 
-all: build-server
+# ==============================================================================
+# Main Commands
+# ==============================================================================
 
-build-server:
-	mkdir -p $(dir $(BINARY))
-	cd daemon && $(GO) build -o ../$(BINARY) $(CMD_DIR)
+.PHONY: help up package install install-local uninstall-local package-all clean
 
-run-server:
-	@echo "Starting server"
-	cd daemon && $(GO) run $(CMD_DIR)
+help: ## Show available commands
+	@echo "Rishi AI RStudio Add-in"
+	@echo ""
+	@echo "Commands:"
+	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z_-]+:.*##/ { printf "  %-15s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-# Run the compiled binary (requires `make build-server` first)
-start-server: build-server
-	@echo "Starting binary"
-	./$(BINARY)
+up: ## One command for local dev: build daemon, install addin, launch RStudio
+	@echo "Setting up local development environment..."
+	@$(MAKE) _install-deps
+	@$(MAKE) _build-daemon
+	@$(MAKE) _build-addin
+	@$(MAKE) _install-addin
+	@$(MAKE) _launch-rstudio
+	@echo "✓ Development environment ready!"
 
-clean-server:
-	rm -f $(BINARY)
+package: ## Create distribution packages in dist/
+	@echo "Creating distribution packages..."
+	@rm -rf $(DIST_DIR) && mkdir -p $(DIST_DIR)
+	@$(MAKE) _build-daemon
+	@$(MAKE) _build-addin
+	@$(MAKE) _package-r-source
+	@$(MAKE) _package-daemon
+	@echo "✓ Packages created in $(DIST_DIR)/"
+	@ls -la $(DIST_DIR)/
 
-tidy-server:
-	cd daemon && $(GO) mod tidy
+install-local: package ## Install from built packages (simulates user installation)
+	@echo "Installing from local packages..."
+	@R -e "install.packages('$(DIST_DIR)/$(PACKAGE_NAME)_$(VERSION).tar.gz', repos=NULL, type='source')"
+	@echo "✓ Installed $(PACKAGE_NAME) from local tarball"
 
-fmt-server:
-	cd daemon && $(GO) fmt ./...
+uninstall-local: ## Uninstall the locally installed package
+	@echo "Uninstalling $(PACKAGE_NAME)..."
+	@R -e "if ('$(PACKAGE_NAME)' %in% rownames(installed.packages())) { remove.packages('$(PACKAGE_NAME)'); cat('✓ Uninstalled $(PACKAGE_NAME)\n') } else { cat('$(PACKAGE_NAME) is not installed\n') }"
 
-test-server:
-	cd daemon && $(GO) test ./...
+package-all: ## Cross-compile daemon for all platforms and create complete distribution
+	@echo "Creating complete distribution for all platforms..."
+	@rm -rf $(DIST_DIR) && mkdir -p $(DIST_DIR)
+	@$(MAKE) _build-addin
+	@$(MAKE) _package-r-source
+	@$(MAKE) _package-daemon-all
+	@echo "✓ Complete distribution created in $(DIST_DIR)/"
+	@ls -la $(DIST_DIR)/
 
-# Add-in targets
-r-deps:
-	@echo "Installing R package dependencies"
-	@if command -v R >/dev/null 2>&1; then \
-		R -e "install.packages(c('rstudioapi', 'httpuv', 'tools', 'plumber', 'jsonlite', 'shiny', 'miniUI', 'htmltools', 'websocket'), repos='https://cran.rstudio.com/')"; \
-	else \
-		echo "Error: R is not installed or not in PATH"; \
-		exit 1; \
-	fi
+clean: ## Clean all build artifacts
+	@echo "Cleaning build artifacts..."
+	@rm -rf $(DIST_DIR)
+	@rm -f $(DAEMON_DIR)/bin/$(BINARY_NAME)
+	@rm -rf $(ADDIN_DIR)/node_modules
+	@rm -f $(ADDIN_DIR)/inst/www/chat-app.js*
+	@rm -f $(ADDIN_DIR)/*.tar.gz
+	@cd $(DAEMON_DIR) && $(GO) clean
+	@echo "✓ Build artifacts cleaned"
 
-addin-deps:
-	@echo "Installing Node.js dependencies for React app"
-	cd $(ADDIN_DIR) && npm install
+# ==============================================================================
+# Internal Build Steps (prefixed with _ to indicate they're internal)
+# ==============================================================================
 
-build-addin: addin-deps
-	@echo "Building React app for RStudio add-in"
-	cd $(ADDIN_DIR) && npm run build
+_install-deps:
+	@echo "Installing dependencies..."
+	@command -v go >/dev/null || { echo "Error: Go required"; exit 1; }
+	@command -v R >/dev/null || { echo "Error: R required"; exit 1; }
+	@command -v npm >/dev/null || { echo "Error: npm required"; exit 1; }
+	@R -e "install.packages(c('rstudioapi', 'httpuv', 'httr', 'tools', 'plumber', 'jsonlite', 'shiny', 'miniUI', 'htmltools', 'websocket', 'remotes'), repos='https://cran.rstudio.com/', quiet=TRUE)" >/dev/null
+	@cd $(ADDIN_DIR) && npm install --silent
 
-install-addin: r-deps build-addin
-	@echo "Installing RStudio add-in"
-	@if command -v R >/dev/null 2>&1; then \
-		R CMD INSTALL $(ADDIN_DIR); \
-	else \
-		echo "Error: R is not installed or not in PATH"; \
-		exit 1; \
-	fi
+_build-daemon:
+	@echo "Building daemon..."
+	@mkdir -p $(DAEMON_DIR)/bin
+	@cd $(DAEMON_DIR) && $(GO) build -ldflags="-s -w" -o bin/$(BINARY_NAME) ./cmd/server
 
-addin-dev: addin-deps
-	@echo "Starting development mode for React app (watch mode)"
-	cd $(ADDIN_DIR) && npm run dev
+_build-addin:
+	@echo "Building React frontend..."
+	@cd $(ADDIN_DIR) && npm run build --silent
+	@echo "Building daemon binaries for all platforms..."
+	@$(MAKE) _build-daemon-all-platforms
 
-clean-addin:
-	@echo "Cleaning add-in build artifacts"
-	rm -rf $(ADDIN_DIR)/node_modules
-	rm -f $(ADDIN_DIR)/inst/www/chat-app.js
+_install-addin:
+	@echo "Installing R addin..."
+	@R CMD INSTALL $(ADDIN_DIR) --quiet
 
-# Install add-in and launch RStudio
-install-and-launch-addin: install-addin
+_launch-rstudio:
 	@echo "Launching RStudio..."
 	@if command -v rstudio >/dev/null 2>&1; then \
-		rstudio & \
+		rstudio >/dev/null 2>&1 & \
 	elif [ -f "/Applications/RStudio.app/Contents/MacOS/RStudio" ]; then \
 		open -a RStudio; \
-	elif command -v open >/dev/null 2>&1 && [ -d "/Applications/RStudio.app" ]; then \
-		open /Applications/RStudio.app; \
 	else \
-		echo "Error: RStudio not found. Please install RStudio or add it to your PATH"; \
-		exit 1; \
+		echo "Error: RStudio not found"; exit 1; \
 	fi
 
-clean: clean-addin
-	rm -f $(BINARY)
+_package-r-source:
+	@echo "Creating R source package..."
+	@cd $(ADDIN_DIR) && R CMD build . --quiet
+	@mv $(ADDIN_DIR)/$(PACKAGE_NAME)_*.tar.gz $(DIST_DIR)/
+
+_package-daemon:
+	@echo "Packaging daemon binary..."
+	@cp $(DAEMON_DIR)/bin/$(BINARY_NAME) $(DIST_DIR)/$(BINARY_NAME)-$(shell go env GOOS)-$(shell go env GOARCH)
+	@cd $(DIST_DIR) && tar -czf $(BINARY_NAME)-$(shell go env GOOS)-$(shell go env GOARCH).tar.gz $(BINARY_NAME)-$(shell go env GOOS)-$(shell go env GOARCH)
+	@rm $(DIST_DIR)/$(BINARY_NAME)-$(shell go env GOOS)-$(shell go env GOARCH)
+
+_build-daemon-all-platforms:
+	@mkdir -p $(ADDIN_DIR)/inst/bin
+	@for platform in $(PLATFORMS); do \
+		os=$${platform%/*}; \
+		arch=$${platform#*/}; \
+		ext=""; \
+		if [ "$$os" = "windows" ]; then ext=".exe"; fi; \
+		echo "  Building daemon for $$os/$$arch..."; \
+		(cd $(DAEMON_DIR) && GOOS=$$os GOARCH=$$arch $(GO) build -ldflags="-s -w" -o ../$(ADDIN_DIR)/inst/bin/$(BINARY_NAME)-$$os-$$arch$$ext ./cmd/server); \
+	done
+
+_package-daemon-all:
+	@echo "Cross-compiling daemon for all platforms..."
+	@for platform in $(PLATFORMS); do \
+		os=$${platform%/*}; \
+		arch=$${platform#*/}; \
+		ext=""; \
+		if [ "$$os" = "windows" ]; then ext=".exe"; fi; \
+		echo "  Building for $$os/$$arch..."; \
+		cd $(DAEMON_DIR) && GOOS=$$os GOARCH=$$arch $(GO) build -ldflags="-s -w" -o ../$(DIST_DIR)/$(BINARY_NAME)-$$os-$$arch$$ext ./cmd/server; \
+		cd $(DIST_DIR) && tar -czf $(BINARY_NAME)-$$os-$$arch.tar.gz $(BINARY_NAME)-$$os-$$arch$$ext; \
+		rm $(BINARY_NAME)-$$os-$$arch$$ext; \
+	done
+
+# Default target
+.DEFAULT_GOAL := help

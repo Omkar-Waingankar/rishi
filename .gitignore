@@ -3,5 +3,7 @@ daemon/bin
 daemon/.env
 addin/node_modules
 addin/inst/www/chat-app.js*
+addin/inst/bin/rishi-daemon-*
+dist
 instructions
 *CLAUDE.md

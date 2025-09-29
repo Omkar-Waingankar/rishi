@@ -10,6 +10,16 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// handleHealth returns a simple health check response
+func (s *ServerClient) handleHealth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status": "healthy",
+		"service": "rishi-daemon",
+	})
+}
+
 // handleChat proxies a streaming request with history to Anthropic and emits NDJSON lines
 // of the form {"text": "..."} and a final {"is_final": true}.
 func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {

@@ -25,6 +25,9 @@ func (s *ServerClient) Routes() http.Handler {
 	r := chi.NewRouter()
 	r.Use(CORS())
 
+	// Health check endpoint
+	r.Get("/health", s.handleHealth)
+
 	// Streaming chat endpoint (NDJSON)
 	r.Post("/chat", s.handleChat)
 
