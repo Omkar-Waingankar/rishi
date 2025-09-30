@@ -64,25 +64,39 @@ saveConfig <- function(config) {
   }
 
   tryCatch({
-    # Write config file
-    con <- file(config_path, "w")
-    on.exit(close(con))
+    # Write to temp file first for atomic write
+    temp_path <- tempfile(tmpdir = config_dir)
+    con <- file(temp_path, "w")
+    on.exit({
+      close(con)
+      # Clean up temp file if it still exists
+      if (file.exists(temp_path)) {
+        unlink(temp_path)
+      }
+    }, add = FALSE)
 
     # Write each config value
     for (name in names(config)) {
       value <- config[[name]]
       if (is.character(value)) {
-        # Quote character values
-        writeLines(sprintf('%s <- "%s"', name, value), con)
+        # Quote character values and escape any quotes in the value
+        escaped_value <- gsub('"', '\\\\"', value)
+        writeLines(sprintf('%s <- "%s"', name, escaped_value), con)
       } else {
         writeLines(sprintf('%s <- %s', name, as.character(value)), con)
       }
     }
 
-    # Set restrictive permissions on Unix systems
+    close(con)
+    on.exit(NULL)  # Clear the on.exit handler
+
+    # Set restrictive permissions before moving (Unix only)
     if (.Platform$OS.type == "unix") {
-      Sys.chmod(config_path, mode = "0600")
+      Sys.chmod(temp_path, mode = "0600")
     }
+
+    # Move temp file to final location (atomic on most systems)
+    file.rename(temp_path, config_path)
 
     return(TRUE)
   }, error = function(e) {
