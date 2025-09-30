@@ -59,10 +59,13 @@ uninstall-local: ## Uninstall the locally installed package
 	@echo "Uninstalling $(PACKAGE_NAME)..."
 	@R -e "if ('$(PACKAGE_NAME)' %in% rownames(installed.packages())) { remove.packages('$(PACKAGE_NAME)'); cat('✓ Uninstalled $(PACKAGE_NAME)\n') } else { cat('$(PACKAGE_NAME) is not installed\n') }"
 
-release: ## Create and publish a new GitHub release with binaries
+release: ## Create and publish a new GitHub release with binaries from dist/
 	@echo "Creating new release v$(VERSION)..."
 	@if [ -z "$(VERSION)" ]; then echo "Error: VERSION not found in DESCRIPTION"; exit 1; fi
-	@$(MAKE) package-all
+	@if [ ! -d "$(DIST_DIR)" ] || [ -z "$$(ls -A $(DIST_DIR) 2>/dev/null)" ]; then \
+		echo "Error: dist/ is empty. Run 'make package-all' first."; \
+		exit 1; \
+	fi
 	@git tag -a "v$(VERSION)" -m "Release v$(VERSION)" || (echo "Tag already exists. Delete with: git tag -d v$(VERSION)" && exit 1)
 	@git push origin "v$(VERSION)"
 	@echo ""

@@ -66,26 +66,30 @@ For maintainers publishing a new version:
 
 1. **Update the version** in `addin/DESCRIPTION`:
    ```
-   Version: 1.0.0
+   Version: 1.0.4
    ```
 
-2. **Commit your changes**:
+2. **Build everything** (frontend + daemon binaries for all platforms):
    ```bash
-   git add .
-   git commit -m "Bump version to 0.2.0"
+   make package-all
+   ```
+
+3. **Commit and push the built assets**:
+   ```bash
+   git add addin/DESCRIPTION addin/inst/www/ addin/inst/bin/
+   git commit -m "Release v1.0.4"
    git push
    ```
 
-3. **Create and publish the release**:
+4. **Create and publish the GitHub release**:
    ```bash
    make release
    ```
 
 This will:
-- Build daemon binaries for all platforms (Linux, macOS Intel/ARM, Windows)
-- Create a git tag (e.g., `v0.2.0`)
+- Create a git tag (e.g., `v1.0.4`)
 - Push the tag to GitHub
-- Create a GitHub release with binaries attached
+- Create a GitHub release with standalone daemon binaries attached
 
 **Requirements**: You need the [GitHub CLI (`gh`)](https://cli.github.com/) installed and authenticated.
 
