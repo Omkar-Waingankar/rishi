@@ -12,25 +12,31 @@ rishiAddin <- function() {
 
   # Get the path to the www directory
   www_dir <- system.file("www", package = "rishi")
-  
+
   if (!dir.exists(www_dir)) {
     stop("Web assets not found. Make sure to run 'make build-addin' first.")
   }
-  
-  # Start a simple HTTP server to serve the React app (always on port 8081)
-  server_port <- startLocalServer(www_dir)
-  
-  # Start the daemon if not already running
-  startDaemon()
 
-  # Start the Tool RPC server (HTTP for frontend) AND WebSocket connection
+  # Start the Tool RPC server first (HTTP for frontend) AND WebSocket connection
+  # This needs to be running before the frontend loads so it can check for API key
   startToolRPC()
   startToolRPCWebSocket()
-  
+
+  # Start a simple HTTP server to serve the React app (always on port 8081)
+  server_port <- startLocalServer(www_dir)
+
+  # Try to start the daemon if API key is available
+  # If not available, frontend will show setup UI
+  tryCatch({
+    startDaemon()
+  }, error = function(e) {
+    # Daemon failed to start - this is okay, user may need to set up API key
+  })
+
   # Open in RStudio viewer pane
   viewer_url <- paste0("http://127.0.0.1:", server_port, "/index.html")
   rstudioapi::viewer(viewer_url, height = "maximize")
-  
+
   # Display ASCII art and welcome message
   cat("\n")
   cat("  ██████╗ ██╗███████╗██╗  ██╗██╗\n")
@@ -116,16 +122,11 @@ startDaemon <- function() {
       Sys.chmod(daemon_path, mode = "0755")
     }
 
-    # Check for required ANTHROPIC_API_KEY environment variable
-    # Try to reload .Renviron in case it was just created
-    renviron_path <- file.path(Sys.getenv("HOME"), ".Renviron")
-    if (file.exists(renviron_path)) {
-      readRenviron(renviron_path)
-    }
+    # Check for required ANTHROPIC_API_KEY from config file
+    api_key <- getApiKey()
 
-    api_key <- Sys.getenv("ANTHROPIC_API_KEY")
-    if (api_key == "") {
-      stop("ANTHROPIC_API_KEY environment variable is required. Please set it in your .Renviron file and restart R, or set it directly with Sys.setenv(ANTHROPIC_API_KEY='your_key').")
+    if (is.null(api_key) || api_key == "") { # Should never happen
+      stop("ANTHROPIC_API_KEY not found. Please configure your API key in the Rishi UI.")
     }
 
     # Set environment variable temporarily and start daemon process

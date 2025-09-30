@@ -410,20 +410,33 @@ handle_ws_message <- function(message) {
 }
 
 #' Start WebSocket Tool RPC Connection
-#' 
+#'
 #' Establishes a WebSocket connection to the cloud Go backend
 #' @param backend_url URL of the Go backend WebSocket endpoint
 startToolRPCWebSocket <- function(backend_url = "ws://localhost:8080/ws/tools") {
+  # First check if daemon is running before attempting WebSocket connection
+  daemon_running <- tryCatch({
+    response <- httr::GET("http://localhost:8080/health", httr::timeout(1))
+    httr::status_code(response) == 200
+  }, error = function(e) {
+    FALSE
+  })
+
+  if (!daemon_running) {
+    # Daemon not running, skip WebSocket connection silently
+    return(FALSE)
+  }
+
   tryCatch({
-    
+
     # Create WebSocket connection with authentication header
-    .ws_env$connection <- websocket::WebSocket$new(backend_url, 
+    .ws_env$connection <- websocket::WebSocket$new(backend_url,
       headers = list(
         "Authorization" = paste("Bearer", .ws_env$token)
       ),
       autoConnect = FALSE
     )
-    
+
     # Set up event handlers
     .ws_env$connection$onOpen(function(event) {
       # Send initial handshake
@@ -434,25 +447,25 @@ startToolRPCWebSocket <- function(backend_url = "ws://localhost:8080/ws/tools") 
       )
       .ws_env$connection$send(jsonlite::toJSON(handshake, auto_unbox = TRUE))
     })
-    
+
     .ws_env$connection$onMessage(function(event) {
       handle_ws_message(event$data)
     })
-    
+
     .ws_env$connection$onClose(function(event) {
       cat("❌ WebSocket connection closed with code", event$code, "reason:", event$reason, "\n")
     })
-    
+
     .ws_env$connection$onError(function(event) {
       cat("❌ WebSocket error:", event$message, "\n")
     })
-    
+
     # Connect to the backend
     .ws_env$connection$connect()
-    
+
     return(TRUE)
   }, error = function(e) {
-    warning(paste("Failed to start WebSocket Tool RPC:", e$message))
+    # Silently fail - daemon will be started later
     return(FALSE)
   })
 }

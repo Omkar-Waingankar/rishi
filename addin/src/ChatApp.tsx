@@ -1,17 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import MessageList from './MessageList';
 import InputBox from './InputBox';
+import ApiKeySetup from './ApiKeySetup';
 import { Message, ChatResponse } from './types';
-import { 
-  ToolCommand, 
-  LegacyToolCommand, 
-  ToolCallStatus, 
+import {
+  ToolCommand,
+  LegacyToolCommand,
+  ToolCallStatus,
   ViewToolInput,
   StrReplaceToolInput,
   CreateToolInput,
   InsertToolInput,
-  LegacyReadFileInput, 
-  LegacyListFilesInput 
+  LegacyReadFileInput,
+  LegacyListFilesInput
 } from './tool_types';
 
 const getToolCallText = (toolCall: { name: string; status: string; input?: object }) => {
@@ -111,9 +112,9 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
 
 const ChatApp: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
-    { 
-      id: 1, 
-      sender: 'assistant', 
+    {
+      id: 1,
+      sender: 'assistant',
       timestamp: new Date(),
       content: [{
         type: 'text',
@@ -124,6 +125,8 @@ const ChatApp: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [safeRoot, setSafeRoot] = useState<string | null>(null);
   const [safeRootError, setSafeRootError] = useState<string | null>(null);
+  const [showApiKeySetup, setShowApiKeySetup] = useState<boolean>(false);
+  const [hasApiKey, setHasApiKey] = useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const checkSafeRoot = async () => {
@@ -198,6 +201,32 @@ const ChatApp: React.FC = () => {
       });
     }
   };
+
+  // Check if API key exists on app startup
+  useEffect(() => {
+    const checkApiKey = async () => {
+      try {
+        const response = await fetch('http://localhost:8082/api_key', {
+          method: 'GET',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setHasApiKey(data.has_key);
+          if (!data.has_key) {
+            setShowApiKeySetup(true);
+          }
+        } else {
+          setShowApiKeySetup(true);
+        }
+      } catch (error) {
+        // Tool RPC server not ready yet, will retry
+        console.error('Error checking API key:', error);
+      }
+    };
+
+    checkApiKey();
+  }, []);
 
   // Check safe root on app startup
   useEffect(() => {
@@ -436,14 +465,39 @@ const ChatApp: React.FC = () => {
     }
   };
 
+  const handleApiKeySubmit = async (apiKey: string): Promise<void> => {
+    try {
+      const response = await fetch('http://localhost:8082/api_key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ api_key: apiKey }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save API key');
+      }
+
+      setHasApiKey(true);
+      setShowApiKeySetup(false);
+
+      // The backend will automatically start the daemon
+      // The connection status footer will show when it's connected
+    } catch (error) {
+      throw new Error('Failed to save API key. Please try again.');
+    }
+  };
+
   return (
     <div className="chat-app">
+      {showApiKeySetup && <ApiKeySetup onApiKeySubmit={handleApiKeySubmit} />}
       <div className="chat-header">
         <h2>Rishi</h2>
       </div>
       <MessageList messages={messages} isLoading={isStreaming} />
-      <InputBox 
-        onSendMessage={handleSendMessage} 
+      <InputBox
+        onSendMessage={handleSendMessage}
         disabled={isStreaming || !safeRoot}
         isStreaming={isStreaming}
         onStopStreaming={handleStopStreaming}

@@ -107,6 +107,51 @@ list_files_endpoint <- function(req, res) {
   })
 }
 
+#' Get API key endpoint
+#' @get /api_key
+get_api_key_endpoint <- function(req, res) {
+  api_key <- getApiKey()
+
+  if (is.null(api_key)) {
+    return(list(has_key = jsonlite::unbox(FALSE)))
+  }
+
+  return(list(has_key = jsonlite::unbox(TRUE)))
+}
+
+#' Set API key endpoint
+#' @post /api_key
+set_api_key_endpoint <- function(req, res) {
+  body <- jsonlite::fromJSON(req$postBody)
+
+  api_key <- body$api_key
+
+  if (is.null(api_key) || api_key == "") {
+    res$status <- 400
+    return(list(error = jsonlite::unbox("Missing api_key parameter")))
+  }
+
+  success <- setApiKey(api_key)
+
+  if (!success) {
+    res$status <- 500
+    return(list(error = jsonlite::unbox("Failed to save API key")))
+  }
+
+  # Try to start the daemon now that we have an API key
+  tryCatch({
+    startDaemon()
+    # Also establish WebSocket connection
+    Sys.sleep(1)  # Give daemon a moment to start
+    startToolRPCWebSocket()
+  }, error = function(e) {
+    # Daemon start failed, but API key was saved successfully
+    cat("Warning: Failed to start daemon:", e$message, "\n")
+  })
+
+  return(list(success = jsonlite::unbox(TRUE)))
+}
+
 #' Read file endpoint
 #' @post /read
 read_file_endpoint <- function(req, res) {
@@ -191,6 +236,8 @@ startToolRPC <- function() {
     plumber::pr_filter("cors", cors_filter) %>%
     plumber::pr_get("/healthz", healthz_endpoint) %>%
     plumber::pr_get("/safe_root", safe_root_endpoint) %>%
+    plumber::pr_get("/api_key", get_api_key_endpoint) %>%
+    plumber::pr_post("/api_key", set_api_key_endpoint) %>%
     plumber::pr_post("/list", list_files_endpoint) %>%
     plumber::pr_post("/read", read_file_endpoint) %>%
     plumber::pr_set_serializer(plumber::serializer_unboxed_json())
