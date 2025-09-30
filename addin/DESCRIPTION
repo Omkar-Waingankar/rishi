@@ -1,11 +1,12 @@
 Package: rishi
 Type: Package
-Title: Rishi
-Version: 0.1.0
-Author: Omkar Waingankar
-Maintainer: Omkar Waingankar <omkarw.work@gmail.com>
-Description: Rishi is the "Cursor for R". It is a RStudio add-in providing an agentic AI chat interface for code assistance.
+Title: Rishi AI Assistant for R
+Version: 1.0.0
+Authors@R: person("Omkar", "Waingankar", email = "omkarw.work@gmail.com", role = c("aut", "cre"))
+Description: Rishi is the "Cursor for R". It is a RStudio add-in providing an agentic AI chat interface for code assistance powered by LLMs.
 License: MIT
+URL: https://github.com/Omkar-Waingankar/rishi
+BugReports: https://github.com/Omkar-Waingankar/rishi/issues
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.0.0

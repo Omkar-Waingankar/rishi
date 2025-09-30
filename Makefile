@@ -59,6 +59,25 @@ uninstall-local: ## Uninstall the locally installed package
 	@echo "Uninstalling $(PACKAGE_NAME)..."
 	@R -e "if ('$(PACKAGE_NAME)' %in% rownames(installed.packages())) { remove.packages('$(PACKAGE_NAME)'); cat('✓ Uninstalled $(PACKAGE_NAME)\n') } else { cat('$(PACKAGE_NAME) is not installed\n') }"
 
+release: ## Create and publish a new GitHub release with binaries
+	@echo "Creating new release v$(VERSION)..."
+	@if [ -z "$(VERSION)" ]; then echo "Error: VERSION not found in DESCRIPTION"; exit 1; fi
+	@$(MAKE) package-all
+	@git tag -a "v$(VERSION)" -m "Release v$(VERSION)" || (echo "Tag already exists. Delete with: git tag -d v$(VERSION)" && exit 1)
+	@git push origin "v$(VERSION)"
+	@echo ""
+	@echo "Creating GitHub release..."
+	@gh release create "v$(VERSION)" \
+		--title "v$(VERSION)" \
+		--generate-notes \
+		dist/rishi-daemon-linux-amd64.tar.gz \
+		dist/rishi-daemon-darwin-amd64.tar.gz \
+		dist/rishi-daemon-darwin-arm64.tar.gz \
+		dist/rishi-daemon-windows-amd64.tar.gz
+	@echo ""
+	@echo "✓ Release v$(VERSION) published!"
+	@echo "Users can now install with: remotes::install_github(\"$(GITHUB_USER)/$(REPO_NAME)\", subdir = \"addin\")"
+
 package-all: ## Cross-compile daemon for all platforms and create complete distribution
 	@echo "Creating complete distribution for all platforms..."
 	@rm -rf $(DIST_DIR) && mkdir -p $(DIST_DIR)
@@ -139,6 +158,7 @@ _build-daemon-all-platforms:
 
 _package-daemon-all:
 	@echo "Cross-compiling daemon for all platforms..."
+	@mkdir -p $(DIST_DIR)
 	@for platform in $(PLATFORMS); do \
 		os=$${platform%/*}; \
 		arch=$${platform#*/}; \

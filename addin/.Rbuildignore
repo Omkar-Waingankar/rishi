@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^node_modules$
+^src$
+^package\.json$
+^package-lock\.json$
+^webpack\.config\.js$
+^tsconfig\.json$
+^\.DS_Store$
+^CLAUDE\.md$
