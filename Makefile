@@ -165,9 +165,9 @@ _package-daemon-all:
 		ext=""; \
 		if [ "$$os" = "windows" ]; then ext=".exe"; fi; \
 		echo "  Building for $$os/$$arch..."; \
-		cd $(DAEMON_DIR) && GOOS=$$os GOARCH=$$arch $(GO) build -ldflags="-s -w" -o ../$(DIST_DIR)/$(BINARY_NAME)-$$os-$$arch$$ext ./cmd/server; \
-		cd $(DIST_DIR) && tar -czf $(BINARY_NAME)-$$os-$$arch.tar.gz $(BINARY_NAME)-$$os-$$arch$$ext; \
-		rm $(BINARY_NAME)-$$os-$$arch$$ext; \
+		(cd $(DAEMON_DIR) && GOOS=$$os GOARCH=$$arch $(GO) build -ldflags="-s -w" -o ../$(DIST_DIR)/$(BINARY_NAME)-$$os-$$arch$$ext ./cmd/server); \
+		(cd $(DIST_DIR) && tar -czf $(BINARY_NAME)-$$os-$$arch.tar.gz $(BINARY_NAME)-$$os-$$arch$$ext); \
+		rm $(DIST_DIR)/$(BINARY_NAME)-$$os-$$arch$$ext; \
 	done
 
 # Default target
