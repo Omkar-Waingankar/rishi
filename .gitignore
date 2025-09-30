@@ -2,7 +2,6 @@
 daemon/bin
 daemon/.env
 addin/node_modules
-addin/inst/www/chat-app.js*
 dist
 instructions
 *CLAUDE.md

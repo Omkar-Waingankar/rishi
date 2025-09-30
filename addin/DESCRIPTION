@@ -1,7 +1,7 @@
 Package: rishi
 Type: Package
 Title: Rishi AI Assistant for R
-Version: 1.0.2
+Version: 1.0.3
 Authors@R: person("Omkar", "Waingankar", email = "omkarw.work@gmail.com", role = c("aut", "cre"))
 Description: Rishi is the "Cursor for R". It is a RStudio add-in providing an agentic AI chat interface for code assistance powered by LLMs.
 License: MIT
