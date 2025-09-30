@@ -11,7 +11,7 @@ rishiAddin <- function() {
   Sys.sleep(0.5)  # Give processes time to clean up
 
   # Get the path to the www directory
-  www_dir <- system.file("www", package = "rishiai")
+  www_dir <- system.file("www", package = "rishi")
   
   if (!dir.exists(www_dir)) {
     stop("Web assets not found. Make sure to run 'make build-addin' first.")
@@ -206,7 +206,7 @@ getDaemonPath <- function() {
 
   # Build binary path
   binary_name <- paste0("rishi-daemon-", platform_string, binary_suffix)
-  daemon_path <- system.file("bin", binary_name, package = "rishiai")
+  daemon_path <- system.file("bin", binary_name, package = "rishi")
 
   if (daemon_path == "") {
     return(NULL)

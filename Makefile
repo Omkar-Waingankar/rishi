@@ -5,10 +5,10 @@
 # Configuration
 # ==============================================================================
 
-PACKAGE_NAME := rishiai
+PACKAGE_NAME := rishi
 VERSION := $(shell cat addin/DESCRIPTION | grep Version | cut -d' ' -f2)
-GITHUB_USER := halliday
-REPO_NAME := rstudio-ai-addin
+GITHUB_USER := Omkar-Waingankar
+REPO_NAME := rishi
 
 GO := go
 BINARY_NAME := rishi-daemon

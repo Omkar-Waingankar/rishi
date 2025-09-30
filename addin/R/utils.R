@@ -1,4 +1,4 @@
-#' Utility functions shared across the rishiai package
+#' Utility functions shared across the rishi package
 
 #' Compute safe root directory for file operations
 #' 
