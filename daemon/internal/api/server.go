@@ -3,20 +3,17 @@ package api
 import (
 	"net/http"
 
-	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/go-chi/chi/v5"
 )
 
 // ServerClient hosts HTTP endpoints for the Rishi backend.
 type ServerClient struct {
-	anthropicClient anthropic.Client
-	wsManager       *WebSocketManager
+	wsManager *WebSocketManager
 }
 
-func NewServerClient(anthropicClient anthropic.Client) *ServerClient {
+func NewServerClient() *ServerClient {
 	return &ServerClient{
-		anthropicClient: anthropicClient,
-		wsManager:       NewWebSocketManager(),
+		wsManager: NewWebSocketManager(),
 	}
 }
 
@@ -33,6 +30,11 @@ func (s *ServerClient) Routes() http.Handler {
 
 	// WebSocket endpoint for tool communication
 	r.Get("/ws/tools", s.HandleWebSocket)
+
+	// API key management endpoints
+	r.Get("/api/key", s.handleGetAPIKey)
+	r.Post("/api/key", s.handleSetAPIKey)
+	r.Post("/api/key/validate", s.handleValidateAPIKey)
 
 	return r
 }

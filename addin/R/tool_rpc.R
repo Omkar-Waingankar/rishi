@@ -107,99 +107,6 @@ list_files_endpoint <- function(req, res) {
   })
 }
 
-#' Get API key endpoint
-#' @get /api_key
-get_api_key_endpoint <- function(req, res) {
-  api_key <- getApiKey()
-
-  if (is.null(api_key)) {
-    return(list(has_key = jsonlite::unbox(FALSE)))
-  }
-
-  return(list(has_key = jsonlite::unbox(TRUE)))
-}
-
-#' Validate API key endpoint
-#' @post /validate_api_key
-validate_api_key_endpoint <- function(req, res) {
-  body <- jsonlite::fromJSON(req$postBody)
-
-  api_key <- body$api_key
-
-  if (is.null(api_key) || api_key == "") {
-    res$status <- 400
-    return(list(error = jsonlite::unbox("Missing api_key parameter")))
-  }
-
-  # Basic format validation
-  if (!startsWith(api_key, "sk-ant-")) {
-    return(list(valid = jsonlite::unbox(FALSE)))
-  }
-
-  if (nchar(api_key) < 20) {
-    return(list(valid = jsonlite::unbox(FALSE)))
-  }
-
-  # Test the API key with Anthropic API using httr
-  tryCatch({
-    response <- httr::POST(
-      url = "https://api.anthropic.com/v1/messages",
-      httr::add_headers(
-        `x-api-key` = api_key,
-        `anthropic-version` = "2023-06-01",
-        `content-type` = "application/json"
-      ),
-      body = jsonlite::toJSON(list(
-        model = "claude-3-haiku-20240307",
-        max_tokens = 1,
-        messages = list(list(role = "user", content = "hi"))
-      ), auto_unbox = TRUE),
-      encode = "raw"
-    )
-
-    # 200 = success, 400 = validation error but auth worked
-    is_valid <- httr::status_code(response) %in% c(200, 400)
-
-    return(list(valid = jsonlite::unbox(is_valid)))
-  }, error = function(e) {
-    # Network error or API unreachable
-    return(list(valid = jsonlite::unbox(FALSE)))
-  })
-}
-
-#' Set API key endpoint
-#' @post /api_key
-set_api_key_endpoint <- function(req, res) {
-  body <- jsonlite::fromJSON(req$postBody)
-
-  api_key <- body$api_key
-
-  if (is.null(api_key) || api_key == "") {
-    res$status <- 400
-    return(list(error = jsonlite::unbox("Missing api_key parameter")))
-  }
-
-  success <- setApiKey(api_key)
-
-  if (!success) {
-    res$status <- 500
-    return(list(error = jsonlite::unbox("Failed to save API key")))
-  }
-
-  # Try to start the daemon now that we have an API key
-  tryCatch({
-    startDaemon()
-    # Also establish WebSocket connection
-    Sys.sleep(1)  # Give daemon a moment to start
-    startToolRPCWebSocket()
-  }, error = function(e) {
-    # Daemon start failed, but API key was saved successfully
-    cat("Warning: Failed to start daemon:", e$message, "\n")
-  })
-
-  return(list(success = jsonlite::unbox(TRUE)))
-}
-
 #' Read file endpoint
 #' @post /read
 read_file_endpoint <- function(req, res) {
@@ -284,9 +191,6 @@ startToolRPC <- function() {
     plumber::pr_filter("cors", cors_filter) %>%
     plumber::pr_get("/healthz", healthz_endpoint) %>%
     plumber::pr_get("/safe_root", safe_root_endpoint) %>%
-    plumber::pr_get("/api_key", get_api_key_endpoint) %>%
-    plumber::pr_post("/validate_api_key", validate_api_key_endpoint) %>%
-    plumber::pr_post("/api_key", set_api_key_endpoint) %>%
     plumber::pr_post("/list", list_files_endpoint) %>%
     plumber::pr_post("/read", read_file_endpoint) %>%
     plumber::pr_set_serializer(plumber::serializer_unboxed_json())

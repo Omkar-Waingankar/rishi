@@ -6,8 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/anthropics/anthropic-sdk-go"
-	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/halliday/rishi/daemon/internal/api"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
@@ -16,8 +14,7 @@ import (
 )
 
 type Config struct {
-	AnthropicAPIKey string `envconfig:"ANTHROPIC_API_KEY" required:"true"`
-	HTTPPort        string `envconfig:"HTTP_PORT" default:"8080"`
+	HTTPPort string `envconfig:"HTTP_PORT" default:"8080"`
 }
 
 func main() {
@@ -34,12 +31,8 @@ func main() {
 		log.Fatal().Err(err).Msg("Failed to process environment configuration")
 	}
 
-	anthropicClient := anthropic.NewClient(
-		option.WithAPIKey(cfg.AnthropicAPIKey),
-	)
-
 	// Build and start HTTP API server
-	srv := api.NewServerClient(anthropicClient)
+	srv := api.NewServerClient()
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf(":%s", cfg.HTTPPort),
 		Handler:           srv.Routes(),

@@ -122,28 +122,9 @@ startDaemon <- function() {
       Sys.chmod(daemon_path, mode = "0755")
     }
 
-    # Check for required ANTHROPIC_API_KEY from config file
-    api_key <- getApiKey()
-
-    if (is.null(api_key) || api_key == "") { # Should never happen
-      stop("ANTHROPIC_API_KEY not found. Please configure your API key in the Rishi UI.")
-    }
-
-    # Set environment variable temporarily and start daemon process
-    old_env <- Sys.getenv("ANTHROPIC_API_KEY")
-    Sys.setenv(ANTHROPIC_API_KEY = api_key)
-
-    tryCatch({
-      # Start daemon as background process (works on both Windows and Unix)
-      result <- system2(daemon_path, wait = FALSE, stdout = FALSE, stderr = FALSE)
-    }, finally = {
-      # Restore original environment variable state
-      if (old_env == "") {
-        Sys.unsetenv("ANTHROPIC_API_KEY")
-      } else {
-        Sys.setenv(ANTHROPIC_API_KEY = old_env)
-      }
-    })
+    # Start daemon as background process (works on both Windows and Unix)
+    # No environment variables needed - daemon accepts API key via header
+    result <- system2(daemon_path, wait = FALSE, stdout = FALSE, stderr = FALSE)
 
     # Give daemon time to start up (typically takes 1-3 seconds)
     Sys.sleep(3)

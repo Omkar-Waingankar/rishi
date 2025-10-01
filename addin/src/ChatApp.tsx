@@ -111,6 +111,7 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
 };
 
 const ChatApp: React.FC = () => {
+  // Message state
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -123,11 +124,15 @@ const ChatApp: React.FC = () => {
     }
   ]);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Safe root state
   const [safeRoot, setSafeRoot] = useState<string | null>(null);
   const [safeRootError, setSafeRootError] = useState<string | null>(null);
+
+  // API key state
+  const [apiKey, setApiKey] = useState<string | null>(null);
   const [showApiKeySetup, setShowApiKeySetup] = useState<boolean>(false);
-  const [hasApiKey, setHasApiKey] = useState<boolean>(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   const checkSafeRoot = async () => {
     try {
@@ -206,21 +211,22 @@ const ChatApp: React.FC = () => {
   useEffect(() => {
     const checkApiKey = async () => {
       try {
-        const response = await fetch('http://localhost:8082/api_key', {
+        const response = await fetch('http://localhost:8080/api/key', {
           method: 'GET',
         });
 
         if (response.ok) {
           const data = await response.json();
-          setHasApiKey(data.has_key);
-          if (!data.has_key) {
+          if (!data.has_key || !data.api_key) {
             setShowApiKeySetup(true);
+          } else {
+            setApiKey(data.api_key);
           }
         } else {
           setShowApiKeySetup(true);
         }
       } catch (error) {
-        // Tool RPC server not ready yet, will retry
+        // Backend server not ready yet, will retry
         console.error('Error checking API key:', error);
       }
     };
@@ -315,9 +321,10 @@ const ChatApp: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Model': selectedModel
+          'X-Model': selectedModel,
+          'X-Anthropic-API-Key': apiKey || ''
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: messageText,
           history: conversationHistory,
           safe_root: safeRoot
@@ -465,25 +472,22 @@ const ChatApp: React.FC = () => {
     }
   };
 
-  const handleApiKeySubmit = async (apiKey: string): Promise<void> => {
+  const handleApiKeySubmit = async (submittedApiKey: string): Promise<void> => {
     try {
-      const response = await fetch('http://localhost:8082/api_key', {
+      const response = await fetch('http://localhost:8080/api/key', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ api_key: apiKey }),
+        body: JSON.stringify({ api_key: submittedApiKey }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to save API key');
       }
 
-      setHasApiKey(true);
+      setApiKey(submittedApiKey);
       setShowApiKeySetup(false);
-
-      // The backend will automatically start the daemon
-      // The connection status footer will show when it's connected
     } catch (error) {
       throw new Error('Failed to save API key. Please try again.');
     }

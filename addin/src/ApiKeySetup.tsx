@@ -37,7 +37,7 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySubmit }) => {
       // Test with backend validation endpoint
       setIsValidating(true);
       try {
-        const response = await fetch('http://localhost:8082/validate_api_key', {
+        const response = await fetch('http://localhost:8080/api/key/validate', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
