@@ -1,3 +1,7 @@
+# Package-level environment to track Rishi state
+.rishi_state <- new.env(parent = emptyenv())
+.rishi_state$is_running <- FALSE
+
 #' Launch Rishi
 #'
 #' This function launches the Rishi chat interface as an RStudio add-in.
@@ -6,6 +10,14 @@
 #'
 #' @export
 rishiAddin <- function() {
+  # Check if Rishi is already running
+  if (.rishi_state$is_running) {
+    cat("ℹ️  Rishi is already running. Refreshing viewer pane...\n")
+    viewer_url <- "http://127.0.0.1:8081/index.html"
+    rstudioapi::viewer(viewer_url, height = "maximize")
+    return(invisible(NULL))
+  }
+
   # Clean up any previous Rishi processes and servers
   cleanupRishi()
   Sys.sleep(0.5)  # Give processes time to clean up
@@ -32,6 +44,9 @@ rishiAddin <- function() {
   }, error = function(e) {
     # Daemon failed to start - this is okay, user may need to set up API key
   })
+
+  # Mark Rishi as running
+  .rishi_state$is_running <- TRUE
 
   # Open in RStudio viewer pane
   viewer_url <- paste0("http://127.0.0.1:", server_port, "/index.html")
@@ -205,6 +220,8 @@ getDaemonPath <- function() {
 #'
 #' @export
 cleanupRishi <- function() {
+  # Reset state flag
+  .rishi_state$is_running <- FALSE
   # Clean up any existing HTTP servers
   tryCatch({
     httpuv::stopAllServers()
