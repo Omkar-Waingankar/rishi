@@ -489,9 +489,16 @@ const ChatApp: React.FC = () => {
     }
   };
 
+  if (showApiKeySetup) {
+    return (
+      <div className="chat-app">
+        <ApiKeySetup onApiKeySubmit={handleApiKeySubmit} />
+      </div>
+    );
+  }
+
   return (
     <div className="chat-app">
-      {showApiKeySetup && <ApiKeySetup onApiKeySubmit={handleApiKeySubmit} />}
       <div className="chat-header">
         <h2>Rishi</h2>
       </div>
