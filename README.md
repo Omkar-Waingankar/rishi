@@ -1,10 +1,66 @@
 # Rishi
 
-Rishi is an AI coding assistant for R, built as a RStudio add-in. It provides an agentic chat interface powered by Claude to help you write, debug, and understand R code.
+**Rishi is an open-source AI coding agent for R:**
 
-## Installation
+- **Context-aware:** sees and controls your Console, Environment, and Plots
+- **Grounded in reality:** responses based on your code and package documentation
+- **Privacy-first:** runs locally, your messages/code/data stay on your machine
+- **Transparent:** fully open-source and auditable, control your own API keys
 
-### Install from GitHub (Recommended)
+Works seamlessly as a RStudio Addin.
+
+---
+
+<p align="center">
+  <b><a href="https://github.com/Omkar-Waingankar/rishi">GitHub</a></b>
+  ·
+  <b><a href="https://github.com/Omkar-Waingankar/rishi/issues">Issues</a></b>
+  ·
+  <b><a href="https://www.linkedin.com/in/omkar-waingankar/">LinkedIn</a></b>
+  <br>
+  <br>
+  <b><a href="#get-started">Quick Start</a></b>
+  ·
+  <b><a href="CONTRIBUTING.md">Contributing Guide</a></b>
+</p>
+
+---
+
+<table>
+  <tr>
+    <td width="30%" valign="top"><b>What is Rishi?</b></td>
+    <td width="70%" valign="top">Rishi is an open-source AI coding agent for R that integrates seamlessly into RStudio. Unlike ChatGPT and similar tools, Rishi sees your R project, data, and visualizations — no more copy-pasting context back and forth.</td>
+  </tr>
+  <tr>
+    <td width="30%" valign="top"><b>How is Rishi different from ChatGPT?</b></td>
+    <td width="70%" valign="top">
+      ChatGPT and similar tools lack awareness of your R project, data, and visualizations. To use them effectively, you must manually copy context back and forth from your IDE with every interaction.<br><br>
+      Rishi automatically delivers relevant context from your Files, Environment, Console, and Plots panes to the LLM with every message. It can also work autonomously with these panes to accomplish tasks without constant hand-holding.
+    </td>
+  </tr>
+  <tr>
+    <td width="30%" valign="top"><b>What models are supported?</b></td>
+    <td width="70%" valign="top">Currently, Claude Sonnet 3.7 and Claude Sonnet 4. Expanding support to other frontier and open-source models is on the roadmap.</td>
+  </tr>
+  <tr>
+    <td width="30%" valign="top"><b>How private is Rishi?</b></td>
+    <td width="70%" valign="top">Very. By default, your messages, code, and data remain on your local machine. Rishi runs locally and doesn't store information in the cloud. You're also in control of your own API keys so there are no surprise costs or concerns about your work being used to train models.</td>
+  </tr>
+  <tr>
+    <td width="30%" valign="top"><b>How are people using Rishi?</b></td>
+    <td width="70%" valign="top">Data scientists use Rishi to quickly ramp up and run exploratory data analyses, debug obscure console errors, polish visualizations, and learn unfamiliar packages.</td>
+  </tr>
+  <tr>
+    <td width="30%" valign="top"><b>How do I get started?</b></td>
+    <td width="70%" valign="top">Integrating Rishi into your R workflow is as simple as installing an R package and launching the Addin. See the <b><a href="#get-started">Quick Start</a></b> below.</td>
+  </tr>
+</table>
+
+---
+
+## Get Started
+
+**Install Rishi:**
 
 ```r
 # Install remotes if you don't have it
@@ -14,21 +70,7 @@ install.packages("remotes")
 remotes::install_github("Omkar-Waingankar/rishi", subdir = "addin")
 ```
 
-### Set up your API key
-
-Add your Anthropic API key to your `.Renviron` file:
-
-```r
-# Edit your .Renviron file
-usethis::edit_r_environ()
-
-# Add this line (replace with your actual key):
-ANTHROPIC_API_KEY=your-api-key-here
-```
-
-Restart R after editing `.Renviron`.
-
-### Launch Rishi
+**Launch Rishi:**
 
 ```r
 rishi::rishiAddin()
@@ -38,69 +80,10 @@ Or access it from the RStudio Addins menu.
 
 ---
 
-## Development Setup
+## Questions & Feedback
 
-For contributors and developers:
+You can ask questions or share feedback on [GitHub Issues](https://github.com/Omkar-Waingankar/rishi/issues) or connect with me (Omkar Waingankar) on [LinkedIn](https://www.linkedin.com/in/omkar-waingankar/).
 
-1. Clone this repository.
-2. Set up your Anthropic API key as described above.
-3. Uninstall any existing version:
-   ```bash
-   make uninstall-local
-   ```
-4. Build and install for local development:
-   ```bash
-   make up
-   ```
-5. In RStudio, run:
-   ```r
-   setwd("~/your-project-directory")
-   rishi::rishiAddin()
-   ```
+## Contributing
 
----
-
-## Creating a New Release
-
-For maintainers publishing a new version:
-
-1. **Update the version** in `addin/DESCRIPTION`:
-   ```
-   Version: 1.0.4
-   ```
-
-2. **Build everything** (frontend + daemon binaries for all platforms):
-   ```bash
-   make package-all
-   ```
-
-3. **Commit and push the built assets**:
-   ```bash
-   git add addin/DESCRIPTION addin/inst/www/ addin/inst/bin/
-   git commit -m "Release v1.0.4"
-   git push
-   ```
-
-4. **Create and publish the GitHub release**:
-   ```bash
-   make release
-   ```
-
-This will:
-- Create a git tag (e.g., `v1.0.4`)
-- Push the tag to GitHub
-- Create a GitHub release with standalone daemon binaries attached
-
-**Requirements**: You need the [GitHub CLI (`gh`)](https://cli.github.com/) installed and authenticated.
-
----
-
-## Repository Structure
-
-- **addin/**  
-  Contains the Rishi add-in source code, including the React frontend and R integration.
-
-- **daemon/**
-  Contains an HTTP backend server that provides AI chat functionality via Anthropic's Claude API. The backend is automatically launched by the add-in.
-
----
+Want to contribute to Rishi? Check out our [Contributing Guide](CONTRIBUTING.md) for development setup, build instructions, and release procedures.
