@@ -9,23 +9,6 @@
 
 Works seamlessly as a RStudio Addin.
 
----
-
-<p align="center">
-  <b><a href="https://github.com/Omkar-Waingankar/rishi">GitHub</a></b>
-  ·
-  <b><a href="https://github.com/Omkar-Waingankar/rishi/issues">Issues</a></b>
-  ·
-  <b><a href="https://www.linkedin.com/in/omkar-waingankar/">LinkedIn</a></b>
-  <br>
-  <br>
-  <b><a href="#get-started">Quick Start</a></b>
-  ·
-  <b><a href="CONTRIBUTING.md">Contributing Guide</a></b>
-</p>
-
----
-
 <table>
   <tr>
     <td width="30%" valign="top"><b>What is Rishi?</b></td>
