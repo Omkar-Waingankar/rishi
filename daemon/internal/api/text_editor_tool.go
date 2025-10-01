@@ -1,7 +1,12 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"time"
 
 	"github.com/rs/zerolog/log"
 )
@@ -20,29 +25,24 @@ const (
 	InsertCommand TextEditorCommand = "insert"
 )
 
-type textEditorController struct {
-	safeRoot  string
-	wsManager *WebSocketManager
-}
-
 type textEditorInput struct {
 	Command TextEditorCommand `json:"command"`
-	
+
 	// Common fields
 	Path string `json:"path"`
-	
+
 	// View-specific fields
 	ViewRange []int `json:"view_range"`
-	
+
 	// StrReplace-specific fields
 	OldStr string `json:"old_str"`
-	
+
 	// StrReplace and Insert shared fields
 	NewStr string `json:"new_str"`
-	
+
 	// Create-specific fields
 	FileText string `json:"file_text"`
-	
+
 	// Insert-specific fields
 	InsertLine int    `json:"insert_line"`
 	InsertText string `json:"insert_text"` // Actual field name Anthropic sends (despite docs)
@@ -50,7 +50,7 @@ type textEditorInput struct {
 
 type textEditorViewInput struct {
 	Path      string `json:"path"`
-	ViewRange []int  `json:"view_range"`
+	ViewRange []int  `json:"view_range,omitempty"`
 }
 
 type textEditorViewOutput struct {
@@ -90,82 +90,99 @@ type textEditorInsertOutput struct {
 	Error   string `json:"error"`
 }
 
-func (c *textEditorController) view(input textEditorViewInput) textEditorViewOutput {
-	// Forward the request to the R server via WebSocket with proper struct
-	response, err := c.wsManager.sendTextEditorCommand(input)
+// HTTP client for R tool server
+var toolClient = &http.Client{
+	Timeout: 30 * time.Second,
+}
+
+// makeToolRequest makes an HTTP POST request to the R tool server
+func makeToolRequest(endpoint string, payload interface{}, response interface{}) error {
+	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to send text editor command to R server")
+		return fmt.Errorf("failed to marshal payload: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:8082%s", endpoint), bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := toolClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
+	}
+
+	if err := json.Unmarshal(body, response); err != nil {
+		return fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return nil
+}
+
+func textEditorView(input textEditorViewInput) textEditorViewOutput {
+	var output textEditorViewOutput
+
+	err := makeToolRequest("/text_editor/view", input, &output)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to call text editor view endpoint")
 		return textEditorViewOutput{
 			Error: fmt.Sprintf("Failed to communicate with R server: %v", err),
 		}
 	}
 
-	// Response is already the correct type!
-	if response == nil {
-		return textEditorViewOutput{
-			Error: "No response from R server",
-		}
-	}
-
-	return *response
+	return output
 }
 
-func (c *textEditorController) strReplace(input textEditorStrReplaceInput) textEditorStrReplaceOutput {
-	// Forward the request to the R server via WebSocket with proper struct
-	response, err := c.wsManager.sendTextEditorStrReplaceCommand(input)
+func textEditorStrReplace(input textEditorStrReplaceInput) textEditorStrReplaceOutput {
+	var output textEditorStrReplaceOutput
+
+	err := makeToolRequest("/text_editor/str_replace", input, &output)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to send text editor str_replace command to R server")
+		log.Error().Err(err).Msg("Failed to call text editor str_replace endpoint")
 		return textEditorStrReplaceOutput{
 			Error: fmt.Sprintf("Failed to communicate with R server: %v", err),
 		}
 	}
 
-	// Response is already the correct type!
-	if response == nil {
-		return textEditorStrReplaceOutput{
-			Error: "No response from R server",
-		}
-	}
-
-	return *response
+	return output
 }
 
-func (c *textEditorController) create(input textEditorCreateInput) textEditorCreateOutput {
-	// Forward the request to the R server via WebSocket with proper struct
-	response, err := c.wsManager.sendTextEditorCreateCommand(input)
+func textEditorCreate(input textEditorCreateInput) textEditorCreateOutput {
+	var output textEditorCreateOutput
+
+	err := makeToolRequest("/text_editor/create", input, &output)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to send text editor create command to R server")
+		log.Error().Err(err).Msg("Failed to call text editor create endpoint")
 		return textEditorCreateOutput{
 			Error: fmt.Sprintf("Failed to communicate with R server: %v", err),
 		}
 	}
 
-	// Response is already the correct type!
-	if response == nil {
-		return textEditorCreateOutput{
-			Error: "No response from R server",
-		}
-	}
-
-	return *response
+	return output
 }
 
-func (c *textEditorController) insert(input textEditorInsertInput) textEditorInsertOutput {
-	// Forward the request to the R server via WebSocket with proper struct
-	response, err := c.wsManager.sendTextEditorInsertCommand(input)
+func textEditorInsert(input textEditorInsertInput) textEditorInsertOutput {
+	var output textEditorInsertOutput
+
+	err := makeToolRequest("/text_editor/insert", input, &output)
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to send text editor insert command to R server")
+		log.Error().Err(err).Msg("Failed to call text editor insert endpoint")
 		return textEditorInsertOutput{
 			Error: fmt.Sprintf("Failed to communicate with R server: %v", err),
 		}
 	}
 
-	// Response is already the correct type!
-	if response == nil {
-		return textEditorInsertOutput{
-			Error: "No response from R server",
-		}
-	}
-
-	return *response
+	return output
 }

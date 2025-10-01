@@ -45,19 +45,3 @@ export interface ToolCall {
   input?: ViewToolInput | StrReplaceToolInput | CreateToolInput | InsertToolInput;
   result?: string;
 }
-
-// Legacy tool command support (for backward compatibility)
-export enum LegacyToolCommand {
-  READ_FILE = 'read_file',
-  LIST_FILES = 'list_files',
-}
-
-export interface LegacyReadFileInput {
-  path: string;
-  Path?: string; // Alternative capitalization
-}
-
-export interface LegacyListFilesInput {
-  path?: string;
-  Path?: string; // Alternative capitalization
-}

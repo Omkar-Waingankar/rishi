@@ -29,10 +29,9 @@ rishiAddin <- function() {
     stop("Web assets not found. Make sure to run 'make build-addin' first.")
   }
 
-  # Start the Tool RPC server first (HTTP for frontend) AND WebSocket connection
+  # Start the Tool RPC server (HTTP for tool operations)
   # This needs to be running before the frontend loads so it can check for API key
   startToolRPC()
-  startToolRPCWebSocket()
 
   # Start a simple HTTP server to serve the React app (always on port 8081)
   server_port <- startLocalServer(www_dir)
