@@ -5,14 +5,11 @@ import ApiKeySetup from './ApiKeySetup';
 import { Message, ChatResponse } from './types';
 import {
   ToolCommand,
-  LegacyToolCommand,
   ToolCallStatus,
   ViewToolInput,
   StrReplaceToolInput,
   CreateToolInput,
-  InsertToolInput,
-  LegacyReadFileInput,
-  LegacyListFilesInput
+  InsertToolInput
 } from './tool_types';
 
 const getToolCallText = (toolCall: { name: string; status: string; input?: object }) => {
@@ -71,33 +68,7 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
         return `Inserted into ${displayPath}`;
       }
     }
-    
-    // Legacy support for old tool names
-    case LegacyToolCommand.READ_FILE: {
-      const readInput = input as LegacyReadFileInput;
-      const filename = readInput.path || readInput.Path || 'file';
-      
-      if (toolCall.status === 'requesting') {
-        return `Reading ${filename}`;
-      } else if (toolCall.status === 'failed') {
-        return `Failed to read ${filename}`;
-      } else {
-        return `Read ${filename}`;
-      }
-    }
-    case LegacyToolCommand.LIST_FILES: {
-      const listInput = input as LegacyListFilesInput;
-      const dirPath = listInput.path || listInput.Path || 'current directory';
-      
-      if (toolCall.status === 'requesting') {
-        return `Listing files in ${dirPath}`;
-      } else if (toolCall.status === 'failed') {
-        return `Failed to list files in ${dirPath}`;
-      } else {
-        return `Listed files in ${dirPath}`;
-      }
-    }
-    
+
     default:
       // Handle unknown tool commands gracefully
       if (toolCall.status === 'requesting') {

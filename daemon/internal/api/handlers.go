@@ -161,11 +161,10 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		Content string `json:"content"`
 	}
 	type reqBody struct {
-		History  []inboundMessage `json:"history"`
-		Message  string           `json:"message"`
-		Model    string           `json:"model"`
-		MaxTok   int              `json:"max_tokens"`
-		SafeRoot string           `json:"safe_root"`
+		History []inboundMessage `json:"history"`
+		Message string           `json:"message"`
+		Model   string           `json:"model"`
+		MaxTok  int              `json:"max_tokens"`
 	}
 	var in reqBody
 	_ = json.NewDecoder(r.Body).Decode(&in) // tolerate empty/malformed JSON
@@ -177,11 +176,6 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
-		return
-	}
-
-	if in.SafeRoot == "" {
-		http.Error(w, "safe root is required", http.StatusBadRequest)
 		return
 	}
 
@@ -242,11 +236,6 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		tools = append(tools, anthropic.ToolUnionParam{OfTextEditor20250728: &anthropic.ToolTextEditor20250728Param{}})
 	} else if selectedModel == "claude-3.7-sonnet" {
 		tools = append(tools, anthropic.ToolUnionParam{OfTextEditor20250124: &anthropic.ToolTextEditor20250124Param{}})
-	}
-
-	textEditorController := textEditorController{
-		safeRoot:  in.SafeRoot,
-		wsManager: s.wsManager,
 	}
 
 	for {
@@ -355,8 +344,8 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						})
 						flusher.Flush()
 
-						// Get response from textEditorController
-						response = textEditorController.view(viewInput)
+						// Execute text editor view command
+						response = textEditorView(viewInput)
 					case StrReplaceCommand:
 						// Stream tool call start event to frontend
 						strReplaceInput := textEditorStrReplaceInput{
@@ -373,8 +362,8 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						})
 						flusher.Flush()
 
-						// Get response from textEditorController
-						response = textEditorController.strReplace(strReplaceInput)
+						// Execute text editor str_replace command
+						response = textEditorStrReplace(strReplaceInput)
 					case CreateCommand:
 						// Stream tool call start event to frontend
 						createInput := textEditorCreateInput{
@@ -390,8 +379,8 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						})
 						flusher.Flush()
 
-						// Get response from textEditorController
-						response = textEditorController.create(createInput)
+						// Execute text editor create command
+						response = textEditorCreate(createInput)
 					case InsertCommand:
 						// Stream tool call start event to frontend
 						// Handle both field names - docs say new_str but API sends insert_text
@@ -413,8 +402,8 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						})
 						flusher.Flush()
 
-						// Get response from textEditorController
-						response = textEditorController.insert(insertInput)
+						// Execute text editor insert command
+						response = textEditorInsert(insertInput)
 					}
 				}
 

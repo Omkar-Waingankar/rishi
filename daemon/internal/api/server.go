@@ -7,14 +7,10 @@ import (
 )
 
 // ServerClient hosts HTTP endpoints for the Rishi backend.
-type ServerClient struct {
-	wsManager *WebSocketManager
-}
+type ServerClient struct{}
 
 func NewServerClient() *ServerClient {
-	return &ServerClient{
-		wsManager: NewWebSocketManager(),
-	}
+	return &ServerClient{}
 }
 
 // Routes returns the HTTP handler with all routes registered.
@@ -27,9 +23,6 @@ func (s *ServerClient) Routes() http.Handler {
 
 	// Streaming chat endpoint (NDJSON)
 	r.Post("/chat", s.handleChat)
-
-	// WebSocket endpoint for tool communication
-	r.Get("/ws/tools", s.HandleWebSocket)
 
 	// API key management endpoints
 	r.Get("/api/key", s.handleGetAPIKey)

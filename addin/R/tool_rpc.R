@@ -107,94 +107,317 @@ list_files_endpoint <- function(req, res) {
   })
 }
 
-#' Read file endpoint
-#' @post /read
-read_file_endpoint <- function(req, res) {
+#' Text editor view endpoint
+#' @post /text_editor/view
+text_editor_view_endpoint <- function(req, res) {
   body <- jsonlite::fromJSON(req$postBody)
-  
-  relpath <- body$relpath
-  max_bytes <- if (is.null(body$max_bytes)) 2000000 else body$max_bytes
-  
-  if (is.null(relpath) || relpath == "") {
-    res$status <- 400
-    return(list(error = jsonlite::unbox("Missing relpath parameter")))
+
+  # Check if path is missing
+  if (is.null(body$path) || body$path == "") {
+    return(text_editor_view_tool_result(error = "Path is required"))
   }
-  
+
+  relative_path <- body$path
+  view_range <- body$view_range
+
+  # Get safe root
   safe_root <- compute_safe_root()
-  
   if (safe_root == "You are not allowed to list files from root") {
-    res$status <- 400
-    return(list(error = jsonlite::unbox(safe_root)))
+    return(text_editor_view_tool_result(error = safe_root))
   }
-  
-  full_path <- file.path(safe_root, relpath)
-  full_path <- normalizePath(full_path, winslash = "/", mustWork = FALSE)
-  
-  if (!startsWith(full_path, safe_root)) {
-    res$status <- 400
-    return(list(error = jsonlite::unbox("Path outside safe root")))
+
+  # Build absolute path
+  absolute_path <- file.path(safe_root, relative_path)
+  absolute_path <- normalizePath(absolute_path, winslash = "/", mustWork = FALSE)
+
+  # Check if path is within safe root
+  if (!startsWith(absolute_path, safe_root)) {
+    return(text_editor_view_tool_result(error = "Path outside safe root"))
   }
-  
-  if (!file.exists(full_path)) {
-    res$status <- 404
-    return(list(error = jsonlite::unbox("File not found")))
+
+  # Stat the file/directory
+  if (!file.exists(absolute_path)) {
+    return(text_editor_view_tool_result(error = "Failed to stat file"))
   }
-  
-  if (dir.exists(full_path)) {
-    res$status <- 400
-    return(list(error = jsonlite::unbox("Path is a directory, not a file")))
+
+  file_info <- file.info(absolute_path)
+  result <- ""
+
+  if (file_info$isdir) {
+    # List directory contents
+    tryCatch({
+      entries <- list.files(absolute_path, all.files = FALSE, no.. = TRUE, full.names = FALSE)
+
+      result <- paste0("Directory listing for '", relative_path, "':\n")
+
+      for (entry in entries) {
+        entry_path <- file.path(absolute_path, entry)
+        entry_info <- file.info(entry_path)
+
+        if (entry_info$isdir) {
+          result <- paste0(result, entry, "/\n")
+        } else {
+          result <- paste0(result, entry, "\n")
+        }
+      }
+    }, error = function(e) {
+      return(text_editor_view_tool_result(error = "Failed to read directory"))
+    })
+  } else {
+    # Read file contents
+    tryCatch({
+      lines <- readLines(absolute_path, warn = FALSE)
+
+      # Determine which lines to include based on view_range
+      start_line <- 1
+      end_line <- length(lines)
+
+      if (!is.null(view_range) && length(view_range) == 2) {
+        start_line <- view_range[1]
+        end_line <- min(view_range[2], length(lines))
+      }
+
+      # Build result with line numbers
+      result <- paste0("File contents for '", relative_path, "':\n")
+
+      for (i in start_line:end_line) {
+        if (i <= length(lines)) {
+          result <- paste0(result, i, ": ", lines[i], "\n")
+        }
+      }
+    }, error = function(e) {
+      return(text_editor_view_tool_result(error = "Failed to read file"))
+    })
   }
-  
-  file_info <- file.info(full_path)
-  if (is.na(file_info$size) || file_info$size > max_bytes) {
-    res$status <- 400
-    return(list(error = jsonlite::unbox(paste("File too large or unreadable:", file_info$size, "bytes, max:", max_bytes))))
+
+  return(text_editor_view_tool_result(content = result))
+}
+
+#' Text editor str_replace endpoint
+#' @post /text_editor/str_replace
+text_editor_str_replace_endpoint <- function(req, res) {
+  body <- jsonlite::fromJSON(req$postBody)
+
+  # Check if required fields are missing
+  if (is.null(body$path) || body$path == "") {
+    return(text_editor_str_replace_tool_result(error = "Path is required"))
   }
-  
-  # Handle empty files
-  if (file_info$size == 0) {
-    return(list(content = ""))
+  if (is.null(body$old_str)) {
+    return(text_editor_str_replace_tool_result(error = "old_str is required"))
   }
-  
+  if (is.null(body$new_str)) {
+    return(text_editor_str_replace_tool_result(error = "new_str is required"))
+  }
+
+  relative_path <- body$path
+  old_str <- body$old_str
+  new_str <- body$new_str
+
+  # Get safe root
+  safe_root <- compute_safe_root()
+  if (safe_root == "You are not allowed to list files from root") {
+    return(text_editor_str_replace_tool_result(error = safe_root))
+  }
+
+  # Build absolute path
+  absolute_path <- file.path(safe_root, relative_path)
+  absolute_path <- normalizePath(absolute_path, winslash = "/", mustWork = FALSE)
+
+  # Check if path is within safe root
+  if (!startsWith(absolute_path, safe_root)) {
+    return(text_editor_str_replace_tool_result(error = "Path outside safe root"))
+  }
+
+  # Check if file exists
+  if (!file.exists(absolute_path)) {
+    return(text_editor_str_replace_tool_result(error = "File not found"))
+  }
+
+  # Check if path is a directory
+  if (file.info(absolute_path)$isdir) {
+    return(text_editor_str_replace_tool_result(error = "Cannot edit directory"))
+  }
+
   tryCatch({
-    # Read file content using readLines
-    content <- paste(readLines(full_path, warn = FALSE), collapse = "\n")
-    
-    # Ensure content is a string and create proper response
-    if (is.null(content)) {
-      content <- ""
+    # Read file contents
+    content <- readChar(absolute_path, file.info(absolute_path)$size)
+
+    # Count occurrences of old_str
+    matches <- length(gregexpr(old_str, content, fixed = TRUE)[[1]])
+    if (matches == 0 || (matches == 1 && gregexpr(old_str, content, fixed = TRUE)[[1]][1] == -1)) {
+      return(text_editor_str_replace_tool_result(error = "No match found for replacement"))
     }
-    content <- as.character(content)[1]
-    
-    # Manually create JSON to bypass plumber's boxing behavior
-    json_response <- jsonlite::toJSON(list(content = content), auto_unbox = TRUE)
-    
-    # Set content type and return raw JSON
-    res$setHeader("Content-Type", "application/json")
-    res$body <- as.character(json_response)
-    return(res)
+    if (matches > 1) {
+      return(text_editor_str_replace_tool_result(error = paste("Found", matches, "matches for replacement text. Please provide more specific text to make a unique match.")))
+    }
+
+    # Perform replacement
+    new_content <- gsub(old_str, new_str, content, fixed = TRUE)
+
+    # Write back to file
+    writeChar(new_content, absolute_path, eos = NULL)
+
+    return(text_editor_str_replace_tool_result(content = "Successfully replaced text at exactly one location."))
+
   }, error = function(e) {
-    res$status <- 500
-    return(list(error = jsonlite::unbox(paste("Failed to read file:", e$message))))
+    return(text_editor_str_replace_tool_result(error = paste("Failed to replace text:", e$message)))
+  })
+}
+
+#' Text editor create endpoint
+#' @post /text_editor/create
+text_editor_create_endpoint <- function(req, res) {
+  body <- jsonlite::fromJSON(req$postBody)
+
+  # Check if required fields are missing
+  if (is.null(body$path) || body$path == "") {
+    return(text_editor_create_tool_result(error = "Path is required"))
+  }
+  if (is.null(body$file_text)) {
+    return(text_editor_create_tool_result(error = "file_text is required"))
+  }
+
+  relative_path <- body$path
+  file_text <- body$file_text
+
+  # Get safe root
+  safe_root <- compute_safe_root()
+  if (safe_root == "You are not allowed to list files from root") {
+    return(text_editor_create_tool_result(error = safe_root))
+  }
+
+  # Build absolute path
+  absolute_path <- file.path(safe_root, relative_path)
+  absolute_path <- normalizePath(absolute_path, winslash = "/", mustWork = FALSE)
+
+  # Check if path is within safe root
+  if (!startsWith(absolute_path, safe_root)) {
+    return(text_editor_create_tool_result(error = "Path outside safe root"))
+  }
+
+  # Check if file already exists
+  if (file.exists(absolute_path)) {
+    return(text_editor_create_tool_result(error = "File already exists"))
+  }
+
+  tryCatch({
+    # Create directory if it doesn't exist
+    dir_path <- dirname(absolute_path)
+    if (!dir.exists(dir_path)) {
+      dir.create(dir_path, recursive = TRUE)
+    }
+
+    # Write content to file
+    writeChar(file_text, absolute_path, eos = NULL)
+
+    return(text_editor_create_tool_result(content = paste("Successfully created file:", relative_path)))
+
+  }, error = function(e) {
+    return(text_editor_create_tool_result(error = paste("Failed to create file:", e$message)))
+  })
+}
+
+#' Text editor insert endpoint
+#' @post /text_editor/insert
+text_editor_insert_endpoint <- function(req, res) {
+  body <- jsonlite::fromJSON(req$postBody)
+
+  # Check if required fields are missing
+  if (is.null(body$path) || body$path == "") {
+    return(text_editor_insert_tool_result(error = "Path is required"))
+  }
+  if (is.null(body$insert_line) || !is.numeric(body$insert_line)) {
+    return(text_editor_insert_tool_result(error = "insert_line is required and must be a number"))
+  }
+  if (is.null(body$new_str)) {
+    return(text_editor_insert_tool_result(error = "new_str is required"))
+  }
+
+  relative_path <- body$path
+  insert_line <- as.integer(body$insert_line)
+  new_str <- body$new_str
+
+  # Get safe root
+  safe_root <- compute_safe_root()
+  if (safe_root == "You are not allowed to list files from root") {
+    return(text_editor_insert_tool_result(error = safe_root))
+  }
+
+  # Build absolute path
+  absolute_path <- file.path(safe_root, relative_path)
+  absolute_path <- normalizePath(absolute_path, winslash = "/", mustWork = FALSE)
+
+  # Check if path is within safe root
+  if (!startsWith(absolute_path, safe_root)) {
+    return(text_editor_insert_tool_result(error = "Path outside safe root"))
+  }
+
+  # Check if file exists
+  if (!file.exists(absolute_path)) {
+    return(text_editor_insert_tool_result(error = "File not found"))
+  }
+
+  # Check if path is a directory
+  if (file.info(absolute_path)$isdir) {
+    return(text_editor_insert_tool_result(error = "Cannot edit directory"))
+  }
+
+  tryCatch({
+    # Read file lines
+    lines <- readLines(absolute_path, warn = FALSE)
+
+    # Validate insert_line
+    if (insert_line < 0) {
+      return(text_editor_insert_tool_result(error = "insert_line must be >= 0"))
+    }
+    if (insert_line > length(lines)) {
+      return(text_editor_insert_tool_result(error = paste("insert_line", insert_line, "is beyond file length", length(lines))))
+    }
+
+    # Split new_str by newlines for proper insertion
+    new_lines <- strsplit(new_str, "\n")[[1]]
+
+    # Insert text at the specified line
+    if (insert_line == 0) {
+      # Insert at the beginning of the file
+      result_lines <- c(new_lines, lines)
+    } else {
+      # Insert after the specified line
+      result_lines <- c(lines[1:insert_line], new_lines, lines[(insert_line + 1):length(lines)])
+    }
+
+    # Remove any NA lines that might result from empty parts
+    result_lines <- result_lines[!is.na(result_lines)]
+
+    # Write back to file
+    writeLines(result_lines, absolute_path)
+
+    return(text_editor_insert_tool_result(content = paste("Successfully inserted text after line", insert_line)))
+
+  }, error = function(e) {
+    return(text_editor_insert_tool_result(error = paste("Failed to insert text:", e$message)))
   })
 }
 
 #' Start Tool RPC Server
-#' 
+#'
 #' Starts a plumber server on port 8082 for tool operations
 startToolRPC <- function() {
   library(plumber)
   library(jsonlite)
-  
+
   # Create plumber API programmatically
   pr <- plumber::pr() %>%
     plumber::pr_filter("cors", cors_filter) %>%
     plumber::pr_get("/healthz", healthz_endpoint) %>%
     plumber::pr_get("/safe_root", safe_root_endpoint) %>%
     plumber::pr_post("/list", list_files_endpoint) %>%
-    plumber::pr_post("/read", read_file_endpoint) %>%
+    plumber::pr_post("/text_editor/view", text_editor_view_endpoint) %>%
+    plumber::pr_post("/text_editor/str_replace", text_editor_str_replace_endpoint) %>%
+    plumber::pr_post("/text_editor/create", text_editor_create_endpoint) %>%
+    plumber::pr_post("/text_editor/insert", text_editor_insert_endpoint) %>%
     plumber::pr_set_serializer(plumber::serializer_unboxed_json())
-  
+
   # Start server
   tryCatch({
     server <- httpuv::startServer(host = "127.0.0.1", port = 8082, pr)
