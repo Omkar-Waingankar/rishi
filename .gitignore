@@ -1,7 +1,4 @@
 .claude
-daemon/bin
-daemon/.env
-addin/node_modules
 dist
 instructions
 *CLAUDE.md
