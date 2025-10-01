@@ -82,15 +82,13 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
     // Initial check
     checkConnection();
 
-    // Check every 2 seconds while connecting or failed
+    // Check every 2 seconds continuously
     const interval = setInterval(() => {
-      if (connectionStatus !== 'connected') {
-        checkConnection();
-      }
+      checkConnection();
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [connectionStatus]);
+  }, []);
 
   return (
     <div className="input-box">
@@ -103,7 +101,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
               placeholder="Plan, build, analyze anything"
-              disabled={disabled}
+              disabled={disabled || connectionStatus !== 'connected'}
               rows={1}
             />
           </div>
@@ -112,7 +110,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
             <ModelDropdown
               value={selectedModel}
               onChange={handleModelChange}
-              disabled={disabled}
+              disabled={disabled || connectionStatus !== 'connected'}
               options={modelOptions}
             />
 
@@ -130,7 +128,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
             ) : (
               <button
                 type="submit"
-                disabled={disabled || !message.trim() || !safeRoot}
+                disabled={disabled || !message.trim() || !safeRoot || connectionStatus !== 'connected'}
                 className="send-button"
                 aria-label="Send message"
               >
