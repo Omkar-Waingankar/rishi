@@ -45,7 +45,7 @@
 .status-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 6px;
   padding: 6px 16px;
   background-color: #F5F5F7;
   border-bottom: 1px solid var(--border-light);
