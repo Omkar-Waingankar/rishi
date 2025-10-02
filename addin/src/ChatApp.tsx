@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import MessageList from './MessageList';
 import InputBox from './InputBox';
+import StatusBar from './StatusBar';
 import ApiKeySetup from './ApiKeySetup';
 import { Message, ChatResponse } from './types';
 import {
@@ -96,10 +97,14 @@ const ChatApp: React.FC = () => {
   ]);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const triggerStatusBarErrorRef = useRef<(() => void) | null>(null);
 
   // Safe root state
   const [safeRoot, setSafeRoot] = useState<string | null>(null);
   const [safeRootError, setSafeRootError] = useState<string | null>(null);
+
+  // Connection status state
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting');
 
   // API key state
   const [apiKey, setApiKey] = useState<string | null>(null);
@@ -118,63 +123,17 @@ const ChatApp: React.FC = () => {
         const data = await response.json();
         setSafeRoot(data.safe_root);
         setSafeRootError(null);
-        
-        // Remove any existing safe root error messages from chat
-        setMessages(prev => prev.filter(msg => 
-          !(msg.sender === 'assistant' && 
-            msg.content.some(c => c.type === 'safe_root_error'))
-        ));
       } else {
         const errorData = await response.json();
         const errorMessage = errorData.error || 'Failed to get safe root';
         setSafeRootError(errorMessage);
         setSafeRoot(null);
-        
-        // Add error message to chat with refresh link
-        const safeRootErrorMessage: Message = {
-          id: Date.now() + 1000,
-          sender: 'assistant',
-          timestamp: new Date(),
-          content: [{
-            type: 'safe_root_error',
-            content: `⚠️ Rishi requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console\n\nThen click refresh here to continue.`,
-            refreshAction: checkSafeRoot
-          }]
-        };
-        setMessages(prev => {
-          // Remove any existing safe root error messages first
-          const filtered = prev.filter(msg => 
-            !(msg.sender === 'assistant' && 
-              msg.content.some(c => c.type === 'safe_root_error'))
-          );
-          return [...filtered, safeRootErrorMessage];
-        });
       }
     } catch (error) {
       console.error('Error checking safe root:', error);
       const errorMessage = 'Failed to connect to tool server';
       setSafeRootError(errorMessage);
       setSafeRoot(null);
-      
-      // Add error message to chat with refresh link
-      const safeRootErrorMessage: Message = {
-        id: Date.now() + 1000,
-        sender: 'assistant',
-        timestamp: new Date(),
-        content: [{
-          type: 'safe_root_error',
-          content: `⚠️ Rishi requires an active directory to work.\n\nPlease set your active directory by:\n• Opening an RStudio project (.Rproj file), or\n• Using \`setwd("/path/to/your/project")\` in the R console\n\nThen click refresh here to continue.`,
-          refreshAction: checkSafeRoot
-        }]
-      };
-      setMessages(prev => {
-        // Remove any existing safe root error messages first
-        const filtered = prev.filter(msg => 
-          !(msg.sender === 'assistant' && 
-            msg.content.some(c => c.type === 'safe_root_error'))
-        );
-        return [...filtered, safeRootErrorMessage];
-      });
     }
   };
 
@@ -215,6 +174,35 @@ const ChatApp: React.FC = () => {
     const interval = setInterval(() => {
       checkSafeRoot();
     }, 2500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Check daemon connection status
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/health', {
+          method: 'GET',
+        });
+
+        if (response.ok) {
+          setConnectionStatus('connected');
+        } else {
+          setConnectionStatus('failed');
+        }
+      } catch (error) {
+        setConnectionStatus('failed');
+      }
+    };
+
+    // Initial check
+    checkConnection();
+
+    // Check every 2 seconds continuously
+    const interval = setInterval(() => {
+      checkConnection();
+    }, 2000);
 
     return () => clearInterval(interval);
   }, []);
@@ -486,13 +474,15 @@ const ChatApp: React.FC = () => {
       <div className="chat-header">
         <h2>Rishi</h2>
       </div>
+      <StatusBar connectionStatus={connectionStatus} workingDirectory={safeRoot} triggerErrorRef={triggerStatusBarErrorRef} />
       <MessageList messages={messages} isLoading={isStreaming} />
       <InputBox
         onSendMessage={handleSendMessage}
-        disabled={isStreaming || !safeRoot}
+        disabled={isStreaming}
         isStreaming={isStreaming}
         onStopStreaming={handleStopStreaming}
         safeRoot={safeRoot}
+        triggerStatusBarError={triggerStatusBarErrorRef}
       />
     </div>
   );
