@@ -25,30 +25,48 @@ healthz_endpoint <- function() {
 #' Compute safe root endpoint
 #' @get /safe_root
 safe_root_endpoint <- function(req, res) {
-  safe_root <- compute_safe_root()
-  if (safe_root == "You are not allowed to list files from root") {
+  result <- compute_safe_root(is_startup = FALSE)
+
+  # Check if we got an error
+  if (result$source == "none") {
     res$status <- 400
-    return(list(error = jsonlite::unbox(safe_root)))
+    return(list(error = jsonlite::unbox(result$path)))
   }
-  list(safe_root = jsonlite::unbox(safe_root))
+
+  # Detect if working directory changed
+  changed <- FALSE
+  if (!is.null(.wd_state$last_known_wd) && .wd_state$last_known_wd != result$path) {
+    changed <- TRUE
+  }
+
+  # Update cached state
+  .wd_state$last_known_wd <- result$path
+
+  list(
+    safe_root = jsonlite::unbox(result$path),
+    source = jsonlite::unbox(result$source),
+    changed = jsonlite::unbox(changed)
+  )
 }
 
 #' List files endpoint
 #' @post /list
 list_files_endpoint <- function(req, res) {
   body <- jsonlite::fromJSON(req$postBody)
-  
+
   path <- if (is.null(body$path)) "" else body$path
   pattern <- if (is.null(body$pattern)) NULL else body$pattern
   recursive <- if (is.null(body$recursive)) FALSE else body$recursive
   max_items <- if (is.null(body$max_items)) 50 else body$max_items
-  
-  safe_root <- compute_safe_root()
-  
-  if (safe_root == "You are not allowed to list files from root") {
+
+  result <- compute_safe_root()
+
+  if (result$source == "none") {
     res$status <- 400
-    return(list(error = jsonlite::unbox(safe_root)))
+    return(list(error = jsonlite::unbox(result$path)))
   }
+
+  safe_root <- result$path
   
   full_path <- if (path == "") {
     safe_root
@@ -121,10 +139,11 @@ text_editor_view_endpoint <- function(req, res) {
   view_range <- body$view_range
 
   # Get safe root
-  safe_root <- compute_safe_root()
-  if (safe_root == "You are not allowed to list files from root") {
-    return(text_editor_view_tool_result(error = safe_root))
+  result <- compute_safe_root()
+  if (result$source == "none") {
+    return(text_editor_view_tool_result(error = result$path))
   }
+  safe_root <- result$path
 
   # Build absolute path
   absolute_path <- file.path(safe_root, relative_path)
@@ -214,10 +233,11 @@ text_editor_str_replace_endpoint <- function(req, res) {
   new_str <- body$new_str
 
   # Get safe root
-  safe_root <- compute_safe_root()
-  if (safe_root == "You are not allowed to list files from root") {
-    return(text_editor_str_replace_tool_result(error = safe_root))
+  result <- compute_safe_root()
+  if (result$source == "none") {
+    return(text_editor_str_replace_tool_result(error = result$path))
   }
+  safe_root <- result$path
 
   # Build absolute path
   absolute_path <- file.path(safe_root, relative_path)
@@ -281,10 +301,11 @@ text_editor_create_endpoint <- function(req, res) {
   file_text <- body$file_text
 
   # Get safe root
-  safe_root <- compute_safe_root()
-  if (safe_root == "You are not allowed to list files from root") {
-    return(text_editor_create_tool_result(error = safe_root))
+  result <- compute_safe_root()
+  if (result$source == "none") {
+    return(text_editor_create_tool_result(error = result$path))
   }
+  safe_root <- result$path
 
   # Build absolute path
   absolute_path <- file.path(safe_root, relative_path)
@@ -338,10 +359,11 @@ text_editor_insert_endpoint <- function(req, res) {
   new_str <- body$new_str
 
   # Get safe root
-  safe_root <- compute_safe_root()
-  if (safe_root == "You are not allowed to list files from root") {
-    return(text_editor_insert_tool_result(error = safe_root))
+  result <- compute_safe_root()
+  if (result$source == "none") {
+    return(text_editor_insert_tool_result(error = result$path))
   }
+  safe_root <- result$path
 
   # Build absolute path
   absolute_path <- file.path(safe_root, relative_path)

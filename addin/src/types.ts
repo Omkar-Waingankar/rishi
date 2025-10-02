@@ -26,6 +26,7 @@ export interface InputBoxProps {
   isStreaming: boolean;
   onStopStreaming: () => void;
   safeRoot: string | null;
+  triggerStatusBarError?: React.MutableRefObject<(() => void) | null>;
 }
 
 export interface MessageListProps {

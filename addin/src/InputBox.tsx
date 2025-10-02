@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { InputBoxProps } from './types';
 import ModelDropdown from './ModelDropdown';
 
@@ -7,16 +7,22 @@ interface DropdownOption {
   label: string;
 }
 
-type ConnectionStatus = 'connecting' | 'connected' | 'failed';
-
-const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreaming, onStopStreaming, safeRoot }) => {
+const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreaming, onStopStreaming, safeRoot, triggerStatusBarError }) => {
   const [message, setMessage] = useState<string>('');
   const [selectedModel, setSelectedModel] = useState<string>('claude-4-sonnet');
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
+
+    // If no safe root, trigger error animation instead of sending
+    if (!safeRoot && message.trim()) {
+      if (triggerStatusBarError?.current) {
+        triggerStatusBarError.current();
+      }
+      return;
+    }
+
     if (message.trim() && !disabled) {
       onSendMessage(message, selectedModel);
       setMessage('');
@@ -61,35 +67,6 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
     }
   }, []);
 
-  // Check daemon connection status
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const response = await fetch('http://localhost:8080/health', {
-          method: 'GET',
-        });
-
-        if (response.ok) {
-          setConnectionStatus('connected');
-        } else {
-          setConnectionStatus('failed');
-        }
-      } catch (error) {
-        setConnectionStatus('failed');
-      }
-    };
-
-    // Initial check
-    checkConnection();
-
-    // Check every 2 seconds continuously
-    const interval = setInterval(() => {
-      checkConnection();
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <div className="input-box">
       <form onSubmit={handleSubmit}>
@@ -101,7 +78,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
               placeholder="Plan, build, analyze anything"
-              disabled={disabled || connectionStatus !== 'connected'}
+              disabled={disabled}
               rows={1}
             />
           </div>
@@ -110,7 +87,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
             <ModelDropdown
               value={selectedModel}
               onChange={handleModelChange}
-              disabled={disabled || connectionStatus !== 'connected'}
+              disabled={disabled}
               options={modelOptions}
             />
 
@@ -128,7 +105,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
             ) : (
               <button
                 type="submit"
-                disabled={disabled || !message.trim() || !safeRoot || connectionStatus !== 'connected'}
+                disabled={disabled || !message.trim()}
                 className="send-button"
                 aria-label="Send message"
               >
@@ -136,27 +113,6 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
                   <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
                 </svg>
               </button>
-            )}
-          </div>
-
-          <div className="connection-status">
-            {connectionStatus === 'connecting' && (
-              <>
-                <span className="status-dot connecting"></span>
-                <span className="status-text">Connecting to server...</span>
-              </>
-            )}
-            {connectionStatus === 'connected' && (
-              <>
-                <span className="status-dot connected"></span>
-                <span className="status-text">Connected</span>
-              </>
-            )}
-            {connectionStatus === 'failed' && (
-              <>
-                <span className="status-dot failed"></span>
-                <span className="status-text">Failed to connect</span>
-              </>
             )}
           </div>
         </div>
