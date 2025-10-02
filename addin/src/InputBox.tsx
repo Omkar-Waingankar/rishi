@@ -13,6 +13,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
   const [message, setMessage] = useState<string>('');
   const [selectedModel, setSelectedModel] = useState<string>('claude-4-sonnet');
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting');
+  const [showTooltip, setShowTooltip] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
@@ -150,6 +151,25 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
               <>
                 <span className="status-dot connected"></span>
                 <span className="status-text">Connected</span>
+                {safeRoot && (
+                  <>
+                    <span className="status-separator">•</span>
+                    <span
+                      className="working-directory-text"
+                      onMouseEnter={() => setShowTooltip(true)}
+                      onMouseLeave={() => setShowTooltip(false)}
+                    >
+                      {safeRoot}
+                    </span>
+                    {showTooltip && (
+                      <div className="working-directory-tooltip">
+                        Working directory: {safeRoot}
+                        <br />
+                        Change by opening an .Rproj file or running setwd() in the R console
+                      </div>
+                    )}
+                  </>
+                )}
               </>
             )}
             {connectionStatus === 'failed' && (

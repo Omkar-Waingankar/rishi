@@ -210,6 +210,15 @@ const ChatApp: React.FC = () => {
     checkSafeRoot();
   }, []);
 
+  // Poll for working directory changes every 2.5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkSafeRoot();
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleSendMessage = async (messageText: string, selectedModel: string): Promise<void> => {
     if (!messageText.trim()) return;
 

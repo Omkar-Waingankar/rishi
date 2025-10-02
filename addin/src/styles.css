@@ -739,6 +739,7 @@
   padding: 2px 8px;
   font-size: 10px;
   color: var(--text-secondary);
+  position: relative;
 }
 
 .status-dot {
@@ -769,6 +770,40 @@
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+.status-separator {
+  color: var(--text-secondary);
+  margin: 0 2px;
+}
+
+.working-directory-text {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-secondary);
+  cursor: help;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.working-directory-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-sm);
+  padding: 8px 12px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  white-space: normal;
+  max-width: 400px;
+  pointer-events: none;
 }
 
 /* API Key Setup */

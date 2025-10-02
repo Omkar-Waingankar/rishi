@@ -22,6 +22,13 @@ rishiAddin <- function() {
   cleanupRishi()
   Sys.sleep(0.5)  # Give processes time to clean up
 
+  # Initialize working directory (will auto-restore from config if needed)
+  tryCatch({
+    compute_safe_root(is_startup = TRUE)
+  }, error = function(e) {
+    # Safe root initialization failed - will be handled by frontend
+  })
+
   # Get the path to the www directory
   www_dir <- system.file("www", package = "rishi")
 
