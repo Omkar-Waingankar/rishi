@@ -10,7 +10,9 @@ import {
   ViewToolInput,
   StrReplaceToolInput,
   CreateToolInput,
-  InsertToolInput
+  InsertToolInput,
+  ConsoleReadToolInput,
+  ConsoleExecToolInput
 } from './tool_types';
 
 const getToolCallText = (toolCall: { name: string; status: string; input?: object }) => {
@@ -67,6 +69,26 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
         return `Failed to insert into ${displayPath}`;
       } else {
         return `Inserted into ${displayPath}`;
+      }
+    }
+
+    case ToolCommand.CONSOLE_READ: {
+      if (toolCall.status === 'requesting') {
+        return `Reading console`;
+      } else if (toolCall.status === 'failed') {
+        return `Failed to read console`;
+      } else {
+        return `Read console`;
+      }
+    }
+
+    case ToolCommand.CONSOLE_EXEC: {
+      if (toolCall.status === 'requesting') {
+        return `Writing to console`;
+      } else if (toolCall.status === 'failed') {
+        return `Failed to write to console`;
+      } else {
+        return `Wrote to console`;
       }
     }
 

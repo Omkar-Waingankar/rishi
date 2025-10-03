@@ -421,6 +421,76 @@ text_editor_insert_endpoint <- function(req, res) {
   })
 }
 
+#' Console read endpoint
+#' @post /console/read
+console_read_endpoint <- function(req, res) {
+  tryCatch({
+    # Use internal rstudioapi function to get console context
+    console_context <- rstudioapi:::getConsoleEditorContext()
+
+    # Check if we got valid context
+    if (is.null(console_context)) {
+      cat("console_context is null\n")
+      return(list(
+        content = jsonlite::unbox(""),
+        error = jsonlite::unbox("Console context is not available")
+      ))
+    }
+
+    # Extract the console contents (it's a character vector)
+    if (!is.null(console_context$contents) && length(console_context$contents) > 0) {
+      cat("console_context$contents is not null\n")
+      cat(paste("console_context$contents length:", length(console_context$contents), "\n"))
+      cat(paste("console_context$contents:", jsonlite::toJSON(console_context$contents, auto_unbox = TRUE), "\n"))
+      content <- paste(console_context$contents, collapse = "\n")
+    } else {
+      cat("console_context$contents is null\n")
+      content <- ""
+    }
+
+    return(list(
+      content = jsonlite::unbox(content),
+      error = jsonlite::unbox("")
+    ))
+  }, error = function(e) {
+    return(list(
+      content = jsonlite::unbox(""),
+      error = jsonlite::unbox(paste("Failed to read console:", e$message))
+    ))
+  })
+}
+
+#' Console exec endpoint
+#' @post /console/exec
+console_exec_endpoint <- function(req, res) {
+  body <- jsonlite::fromJSON(req$postBody)
+
+  # Check if code is missing
+  if (is.null(body$code) || body$code == "") {
+    return(list(
+      content = jsonlite::unbox(""),
+      error = jsonlite::unbox("Code is required")
+    ))
+  }
+
+  code <- body$code
+
+  tryCatch({
+    # Send code to console and execute it
+    rstudioapi::sendToConsole(code, execute = TRUE, focus = TRUE)
+
+    return(list(
+      content = jsonlite::unbox("Code executed. To check the result, use the console read tool."),
+      error = jsonlite::unbox("")
+    ))
+  }, error = function(e) {
+    return(list(
+      content = jsonlite::unbox(""),
+      error = jsonlite::unbox(paste("Failed to execute code:", e$message))
+    ))
+  })
+}
+
 #' Start Tool RPC Server
 #'
 #' Starts a plumber server on port 8082 for tool operations
@@ -438,6 +508,8 @@ startToolRPC <- function() {
     plumber::pr_post("/text_editor/str_replace", text_editor_str_replace_endpoint) %>%
     plumber::pr_post("/text_editor/create", text_editor_create_endpoint) %>%
     plumber::pr_post("/text_editor/insert", text_editor_insert_endpoint) %>%
+    plumber::pr_post("/console/read", console_read_endpoint) %>%
+    plumber::pr_post("/console/exec", console_exec_endpoint) %>%
     plumber::pr_set_serializer(plumber::serializer_unboxed_json())
 
   # Start server
