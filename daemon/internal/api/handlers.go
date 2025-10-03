@@ -39,15 +39,17 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 	)
 
 	type inboundMessage struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
+		Role    string           `json:"role"`
+		Content []inboundContent `json:"content"`
 	}
+
 	type reqBody struct {
 		History []inboundMessage `json:"history"`
-		Message string           `json:"message"`
+		Content []inboundContent `json:"content"` // Changed from Message string
 		Model   string           `json:"model"`
 		MaxTok  int              `json:"max_tokens"`
 	}
+
 	var in reqBody
 	_ = json.NewDecoder(r.Body).Decode(&in) // tolerate empty/malformed JSON
 
@@ -65,22 +67,51 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 	var msgs []anthropic.MessageParam
 	// Prepend system prompt as a message to keep behavior similar
 	msgs = append(msgs, anthropic.NewUserMessage(anthropic.NewTextBlock(RISHI_SYSTEM_PROMPT)))
+
 	for i, m := range in.History {
 		switch m.Role {
 		case "user":
-			msgs = append(msgs, anthropic.NewUserMessage(anthropic.NewTextBlock(m.Content)))
+			// Convert content blocks for user messages
+			contentBlocks, err := convertToAnthropicContent(m.Content)
+			if err != nil {
+				log.Error().Err(err).Msgf("Error converting user history content")
+				http.Error(w, fmt.Sprintf("Invalid user message content: %v", err), http.StatusBadRequest)
+				return
+			}
+			if len(contentBlocks) > 0 {
+				msgs = append(msgs, anthropic.NewUserMessage(contentBlocks...))
+			}
 		case "assistant":
-			msgs = append(msgs, anthropic.NewAssistantMessage(anthropic.NewTextBlock(m.Content)))
+			// For assistant messages in history, we only have text content
+			// Extract text content from the content array
+			var textContent string
+			for _, content := range m.Content {
+				if content.Type == "text" {
+					textContent += content.Content
+				}
+			}
+			if textContent != "" {
+				msgs = append(msgs, anthropic.NewAssistantMessage(anthropic.NewTextBlock(textContent)))
+			}
 		default:
 			// ignore
 		}
-		log.Info().Msgf("history message %d: role %s, content %s", i, m.Role, m.Content[:min(100, len(m.Content))])
+		log.Info().Msgf("history message %d: role %s, %d content blocks", i, m.Role, len(m.Content))
 	}
 
-	if in.Message != "" {
-		msgs = append(msgs, anthropic.NewUserMessage(anthropic.NewTextBlock(in.Message)))
+	// Handle the new user message content
+	if len(in.Content) > 0 {
+		contentBlocks, err := convertToAnthropicContent(in.Content)
+		if err != nil {
+			log.Error().Err(err).Msgf("Error converting user message content")
+			http.Error(w, fmt.Sprintf("Invalid message content: %v", err), http.StatusBadRequest)
+			return
+		}
+		if len(contentBlocks) > 0 {
+			msgs = append(msgs, anthropic.NewUserMessage(contentBlocks...))
+		}
 	}
-	log.Info().Msgf("new user message: %s", in.Message[:min(100, len(in.Message))])
+	log.Info().Msgf("new user message: %d content blocks", len(in.Content))
 
 	// Start streaming with the official Anthropic SDK
 	model := anthropic.ModelClaudeSonnet4_20250514

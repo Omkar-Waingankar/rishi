@@ -1086,3 +1086,237 @@
     transform: none;
   }
 }
+
+/* Image Attachment Styles */
+.attachment-strip {
+  background: var(--bg-secondary);
+  padding: 4px 12px 2px 12px;
+  border-radius: 12px 12px 0 0;
+}
+
+.image-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.image-error-text {
+  flex: 1;
+}
+
+.image-error-dismiss {
+  background: transparent;
+  border: none;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 8px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.image-error-dismiss:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.image-previews {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.image-hover-preview {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  z-index: 1000;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.hover-preview-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+}
+
+.image-preview {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.image-preview:hover {
+  background: #f3f4f6;
+}
+
+.image-thumbnail-container {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.image-thumbnail {
+  width: 16px;
+  height: 16px;
+  object-fit: cover;
+  border-radius: 2px;
+  background: white;
+}
+
+.remove-x {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: #9ca3af;
+  background: transparent;
+  border-radius: 2px;
+}
+
+.image-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.attachment-button {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.attachment-button:hover:not(:disabled) {
+  background: var(--bg-primary);
+}
+
+.attachment-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.attachment-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--text-secondary);
+}
+
+.attachment-button:hover:not(:disabled) .attachment-icon {
+  color: var(--text-primary);
+}
+
+/* Message Image Thumbnail Styles */
+.message-image-thumbnail {
+  display: inline-block;
+  margin: 4px 4px 4px 0;
+  vertical-align: top;
+}
+
+.message-thumbnail {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  background: white;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.message-thumbnail:hover {
+  opacity: 0.8;
+}
+
+.image-error-placeholder-small {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 8px;
+  text-align: center;
+  border-radius: 4px;
+  font-size: 10px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* Message Image Pills */
+.message-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.message-image-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.message-pill-thumbnail {
+  width: 16px;
+  height: 16px;
+  object-fit: cover;
+  border-radius: 2px;
+  background: white;
+  flex-shrink: 0;
+}
+
+.message-image-label {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.6);
+  font-weight: 500;
+}

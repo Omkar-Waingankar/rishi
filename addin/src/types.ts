@@ -1,7 +1,24 @@
 import { ToolCallStatus } from './tool_types';
 
-interface MessageContent {
-  type: 'text' | 'tool_call' | 'error' | 'safe_root_error';
+// Define supported image MIME types
+export type ImageMimeType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
+
+// Text content
+interface TextContent {
+  type: 'text';
+  content: string;
+}
+
+// Image content
+interface ImageContent {
+  type: 'image';
+  mediaType: ImageMimeType;
+  dataBase64: string;
+}
+
+// Tool call content
+interface ToolCallContent {
+  type: 'tool_call';
   content: string;
   toolCall?: {
     name: string;
@@ -9,9 +26,16 @@ interface MessageContent {
     input?: object;
     result?: string;
   };
-  refreshAction?: () => void;
-  isExpanded?: boolean;
 }
+
+// Error content
+interface ErrorContent {
+  type: 'error';
+  content: string;
+}
+
+// Union of all content types
+export type MessageContent = TextContent | ImageContent | ToolCallContent | ErrorContent;
 
 export interface Message {
   id: number;
@@ -21,7 +45,7 @@ export interface Message {
 }
 
 export interface InputBoxProps {
-  onSendMessage: (message: string, model: string) => void;
+  onSendMessage: (content: MessageContent[], model: string) => void;
   disabled: boolean;
   isStreaming: boolean;
   onStopStreaming: () => void;
