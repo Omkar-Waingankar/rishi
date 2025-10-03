@@ -4,133 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/rs/zerolog/log"
 )
 
-// handleHealth returns a simple health check response
-func (s *ServerClient) handleHealth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"status":  "healthy",
-		"service": "rishi-daemon",
-	})
-}
-
-// handleGetAPIKey returns the API key from the config
-func (s *ServerClient) handleGetAPIKey(w http.ResponseWriter, r *http.Request) {
-	apiKey, err := GetAPIKey()
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to get API key")
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"has_key": false,
-			"api_key": "",
-		})
-		return
-	}
-
-	hasKey := apiKey != ""
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"has_key": hasKey,
-		"api_key": apiKey,
-	})
-}
-
-// handleValidateAPIKey validates an API key against the Anthropic API
-func (s *ServerClient) handleValidateAPIKey(w http.ResponseWriter, r *http.Request) {
-	type reqBody struct {
-		APIKey string `json:"api_key"`
-	}
-	var in reqBody
-	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	if in.APIKey == "" {
-		http.Error(w, "missing api_key parameter", http.StatusBadRequest)
-		return
-	}
-
-	// Basic format validation
-	if !strings.HasPrefix(in.APIKey, "sk-ant-") {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]bool{
-			"valid": false,
-		})
-		return
-	}
-
-	if len(in.APIKey) < 20 {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]bool{
-			"valid": false,
-		})
-		return
-	}
-
-	// Test the API key with Anthropic API
-	testClient := anthropic.NewClient(
-		option.WithAPIKey(in.APIKey),
-	)
-
-	_, err := testClient.Messages.New(r.Context(), anthropic.MessageNewParams{
-		Model:     anthropic.ModelClaude3_5HaikuLatest,
-		MaxTokens: int64(1),
-		Messages: []anthropic.MessageParam{
-			anthropic.NewUserMessage(anthropic.NewTextBlock("hi")),
-		},
-	})
-
-	// Both 200 (success) and 400 (validation error) mean the API key is valid
-	// Only authentication errors (401) mean the key is invalid
-	isValid := err == nil || !strings.Contains(err.Error(), "401")
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]bool{
-		"valid": isValid,
-	})
-}
-
-// handleSetAPIKey saves an API key to the config
-func (s *ServerClient) handleSetAPIKey(w http.ResponseWriter, r *http.Request) {
-	type reqBody struct {
-		APIKey string `json:"api_key"`
-	}
-	var in reqBody
-	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	if in.APIKey == "" {
-		http.Error(w, "missing api_key parameter", http.StatusBadRequest)
-		return
-	}
-
-	if err := SetAPIKey(in.APIKey); err != nil {
-		log.Error().Err(err).Msg("Failed to save API key")
-		http.Error(w, "failed to save API key", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]bool{
-		"success": true,
-	})
-}
+const (
+	defaultMaxTokens = 8192
+)
 
 // handleChat proxies a streaming request with history to Anthropic and emits NDJSON lines
 // of the form {"text": "..."} and a final {"is_final": true}.
@@ -228,7 +110,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 
 	maxTokens := in.MaxTok
 	if maxTokens == 0 {
-		maxTokens = 8192
+		maxTokens = defaultMaxTokens
 	}
 
 	tools := []anthropic.ToolUnionParam{}
@@ -252,18 +134,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 			event := stream.Current()
 			if err := message.Accumulate(event); err != nil {
 				log.Error().Err(err).Msg("message accumulation error")
-
-				// Parse accumulation errors
-				errorMsg := err.Error()
-				var friendlyMsg string
-
-				if strings.Contains(errorMsg, "overloaded_error") || strings.Contains(errorMsg, "Overloaded") {
-					friendlyMsg = "Claude is currently experiencing high demand. Please try again in a few moments."
-				} else {
-					friendlyMsg = fmt.Sprintf("Error processing response: %v", err)
-				}
-
-				_ = json.NewEncoder(w).Encode(map[string]any{"error": friendlyMsg})
+				_ = json.NewEncoder(w).Encode(map[string]any{"error": parseAnthropicError(err)})
 				flusher.Flush()
 				break
 			}
@@ -281,18 +152,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		// Check for streaming errors
 		if err := stream.Err(); err != nil {
 			log.Error().Err(err).Msg("streaming error occurred")
-
-			// Parse common Anthropic API errors to provide user-friendly messages
-			errorMsg := err.Error()
-			var friendlyMsg string
-
-			if strings.Contains(errorMsg, "overloaded_error") || strings.Contains(errorMsg, "Overloaded") {
-				friendlyMsg = "Claude is currently experiencing high demand. Please try again in a few moments."
-			} else {
-				friendlyMsg = fmt.Sprintf("Claude encountered an error: %v", err)
-			}
-
-			_ = json.NewEncoder(w).Encode(map[string]any{"error": friendlyMsg})
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": parseAnthropicError(err)})
 			flusher.Flush()
 			return
 		}
@@ -330,59 +190,28 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 
 					switch input.Command {
 					case ViewCommand:
-						// Stream tool call start event to frontend
 						viewInput := textEditorViewInput{
 							Path:      input.Path,
 							ViewRange: input.ViewRange,
 						}
-						_ = json.NewEncoder(w).Encode(map[string]any{
-							"tool_call": map[string]any{
-								"name":   input.Command,
-								"input":  viewInput,
-								"status": "requesting",
-							},
-						})
-						flusher.Flush()
-
-						// Execute text editor view command
+						streamToolCallStart(w, flusher, string(input.Command), viewInput)
 						response = textEditorView(viewInput)
 					case StrReplaceCommand:
-						// Stream tool call start event to frontend
 						strReplaceInput := textEditorStrReplaceInput{
 							Path:   input.Path,
 							OldStr: input.OldStr,
 							NewStr: input.NewStr,
 						}
-						_ = json.NewEncoder(w).Encode(map[string]any{
-							"tool_call": map[string]any{
-								"name":   input.Command,
-								"input":  strReplaceInput,
-								"status": "requesting",
-							},
-						})
-						flusher.Flush()
-
-						// Execute text editor str_replace command
+						streamToolCallStart(w, flusher, string(input.Command), strReplaceInput)
 						response = textEditorStrReplace(strReplaceInput)
 					case CreateCommand:
-						// Stream tool call start event to frontend
 						createInput := textEditorCreateInput{
 							Path:     input.Path,
 							FileText: input.FileText,
 						}
-						_ = json.NewEncoder(w).Encode(map[string]any{
-							"tool_call": map[string]any{
-								"name":   input.Command,
-								"input":  createInput,
-								"status": "requesting",
-							},
-						})
-						flusher.Flush()
-
-						// Execute text editor create command
+						streamToolCallStart(w, flusher, string(input.Command), createInput)
 						response = textEditorCreate(createInput)
 					case InsertCommand:
-						// Stream tool call start event to frontend
 						// Handle both field names - docs say new_str but API sends insert_text
 						insertText := input.NewStr
 						if insertText == "" {
@@ -393,16 +222,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 							InsertLine: input.InsertLine,
 							NewStr:     insertText,
 						}
-						_ = json.NewEncoder(w).Encode(map[string]any{
-							"tool_call": map[string]any{
-								"name":   input.Command,
-								"input":  insertInput,
-								"status": "requesting",
-							},
-						})
-						flusher.Flush()
-
-						// Execute text editor insert command
+						streamToolCallStart(w, flusher, string(input.Command), insertInput)
 						response = textEditorInsert(insertInput)
 					}
 				}
@@ -422,68 +242,23 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 				case "str_replace_based_edit_tool":
 					var input textEditorInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
-						errMsg := fmt.Sprintf("Failed to parse read_file input: %s, error: %v", variant.JSON.Input.Raw(), err)
+						errMsg := fmt.Sprintf("Failed to parse text editor input: %s, error: %v", variant.JSON.Input.Raw(), err)
 						log.Error().Err(err).Msgf(errMsg)
 					}
 
-					switch response := response.(type) {
+					var commandName string
+					switch response.(type) {
 					case textEditorViewOutput:
-						_ = json.NewEncoder(w).Encode(map[string]any{
-							"tool_call": map[string]any{
-								"name":   ViewCommand,
-								"input":  input,
-								"status": "completed",
-								"result": response,
-							},
-						})
-						flusher.Flush()
-
-						if response.Error != "" {
-							isError = true
-						}
+						commandName = string(ViewCommand)
 					case textEditorStrReplaceOutput:
-						_ = json.NewEncoder(w).Encode(map[string]any{
-							"tool_call": map[string]any{
-								"name":   StrReplaceCommand,
-								"input":  input,
-								"status": "completed",
-								"result": response,
-							},
-						})
-						flusher.Flush()
-
-						if response.Error != "" {
-							isError = true
-						}
+						commandName = string(StrReplaceCommand)
 					case textEditorCreateOutput:
-						_ = json.NewEncoder(w).Encode(map[string]any{
-							"tool_call": map[string]any{
-								"name":   CreateCommand,
-								"input":  input,
-								"status": "completed",
-								"result": response,
-							},
-						})
-						flusher.Flush()
-
-						if response.Error != "" {
-							isError = true
-						}
+						commandName = string(CreateCommand)
 					case textEditorInsertOutput:
-						_ = json.NewEncoder(w).Encode(map[string]any{
-							"tool_call": map[string]any{
-								"name":   InsertCommand,
-								"input":  input,
-								"status": "completed",
-								"result": response,
-							},
-						})
-						flusher.Flush()
-
-						if response.Error != "" {
-							isError = true
-						}
+						commandName = string(InsertCommand)
 					}
+
+					isError = streamToolCallComplete(w, flusher, commandName, input, response)
 				}
 
 				msgs = append(msgs, anthropic.NewAssistantMessage(anthropic.NewToolUseBlock(block.ID, json.RawMessage(variant.JSON.Input.Raw()), block.Name)))
