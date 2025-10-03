@@ -11,7 +11,6 @@ import {
   StrReplaceToolInput,
   CreateToolInput,
   InsertToolInput,
-  ConsoleReadToolInput,
   ConsoleExecToolInput
 } from './tool_types';
 
@@ -69,16 +68,6 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
         return `Failed to insert into ${displayPath}`;
       } else {
         return `Inserted into ${displayPath}`;
-      }
-    }
-
-    case ToolCommand.CONSOLE_READ: {
-      if (toolCall.status === 'requesting') {
-        return `Reading console`;
-      } else if (toolCall.status === 'failed') {
-        return `Failed to read console`;
-      } else {
-        return `Read console`;
       }
     }
 

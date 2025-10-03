@@ -239,19 +239,12 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add custom console tools
-	consoleReadTool := anthropic.ToolParam{
-		Name:        "console_read",
-		Description: anthropic.String("Reads the contents of the user's R console. Returns all visible text in the console including commands and outputs."),
-		InputSchema: GenerateSchema[consoleReadInput](),
-	}
-
 	consoleExecTool := anthropic.ToolParam{
 		Name:        "console_exec",
 		Description: anthropic.String("Executes R code in the user's R console. The code will be sent to the console and executed immediately."),
 		InputSchema: GenerateSchema[consoleExecInput](),
 	}
 
-	tools = append(tools, anthropic.ToolUnionParam{OfTool: &consoleReadTool})
 	tools = append(tools, anthropic.ToolUnionParam{OfTool: &consoleExecTool})
 
 	for {
@@ -323,20 +316,6 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 
 				var response interface{}
 				switch block.Name {
-				case "console_read":
-					// Stream tool call start event to frontend
-					_ = json.NewEncoder(w).Encode(map[string]any{
-						"tool_call": map[string]any{
-							"name":   "console_read",
-							"input":  nil,
-							"status": "requesting",
-						},
-					})
-					flusher.Flush()
-
-					// Execute console read command
-					response = consoleRead(consoleReadInput{})
-
 				case "console_exec":
 					var input consoleExecInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
@@ -473,24 +452,6 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 
 				// Stream tool call completion event to frontend
 				switch block.Name {
-				case "console_read":
-					switch response := response.(type) {
-					case consoleReadOutput:
-						_ = json.NewEncoder(w).Encode(map[string]any{
-							"tool_call": map[string]any{
-								"name":   "console_read",
-								"input":  nil,
-								"status": "completed",
-								"result": response,
-							},
-						})
-						flusher.Flush()
-
-						if response.Error != "" {
-							isError = true
-						}
-					}
-
 				case "console_exec":
 					var input consoleExecInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {

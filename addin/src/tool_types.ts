@@ -5,7 +5,6 @@ export enum ToolCommand {
   STR_REPLACE = 'str_replace',
   CREATE = 'create',
   INSERT = 'insert',
-  CONSOLE_READ = 'console_read',
   CONSOLE_EXEC = 'console_exec',
 }
 
@@ -34,10 +33,6 @@ export interface InsertToolInput {
   new_str: string;
 }
 
-export interface ConsoleReadToolInput {
-  // No input parameters needed
-}
-
 export interface ConsoleExecToolInput {
   code: string;
 }
@@ -52,6 +47,6 @@ export interface ViewToolOutput {
 export interface ToolCall {
   name: ToolCommand;
   status: ToolCallStatus;
-  input?: ViewToolInput | StrReplaceToolInput | CreateToolInput | InsertToolInput | ConsoleReadToolInput | ConsoleExecToolInput;
+  input?: ViewToolInput | StrReplaceToolInput | CreateToolInput | InsertToolInput | ConsoleExecToolInput;
   result?: string;
 }
