@@ -5,6 +5,7 @@ export enum ToolCommand {
   STR_REPLACE = 'str_replace',
   CREATE = 'create',
   INSERT = 'insert',
+  CONSOLE_EXEC = 'console_exec',
 }
 
 export type ToolCallStatus = 'requesting' | 'completed' | 'failed';
@@ -32,6 +33,10 @@ export interface InsertToolInput {
   new_str: string;
 }
 
+export interface ConsoleExecToolInput {
+  code: string;
+}
+
 // Output types for different tool commands
 export interface ViewToolOutput {
   content?: string;
@@ -42,6 +47,6 @@ export interface ViewToolOutput {
 export interface ToolCall {
   name: ToolCommand;
   status: ToolCallStatus;
-  input?: ViewToolInput | StrReplaceToolInput | CreateToolInput | InsertToolInput;
+  input?: ViewToolInput | StrReplaceToolInput | CreateToolInput | InsertToolInput | ConsoleExecToolInput;
   result?: string;
 }

@@ -421,6 +421,38 @@ text_editor_insert_endpoint <- function(req, res) {
   })
 }
 
+
+#' Console exec endpoint
+#' @post /console/exec
+console_exec_endpoint <- function(req, res) {
+  body <- jsonlite::fromJSON(req$postBody)
+
+  # Check if code is missing
+  if (is.null(body$code) || body$code == "") {
+    return(list(
+      content = jsonlite::unbox(""),
+      error = jsonlite::unbox("Code is required")
+    ))
+  }
+
+  code <- body$code
+
+  tryCatch({
+    # Send code to console and execute it
+    rstudioapi::sendToConsole(code, execute = TRUE, focus = TRUE)
+
+    return(list(
+      content = jsonlite::unbox("Code executed successfully."),
+      error = jsonlite::unbox("")
+    ))
+  }, error = function(e) {
+    return(list(
+      content = jsonlite::unbox(""),
+      error = jsonlite::unbox(paste("Failed to execute code:", e$message))
+    ))
+  })
+}
+
 #' Start Tool RPC Server
 #'
 #' Starts a plumber server on port 8082 for tool operations
@@ -438,6 +470,7 @@ startToolRPC <- function() {
     plumber::pr_post("/text_editor/str_replace", text_editor_str_replace_endpoint) %>%
     plumber::pr_post("/text_editor/create", text_editor_create_endpoint) %>%
     plumber::pr_post("/text_editor/insert", text_editor_insert_endpoint) %>%
+    plumber::pr_post("/console/exec", console_exec_endpoint) %>%
     plumber::pr_set_serializer(plumber::serializer_unboxed_json())
 
   # Start server
