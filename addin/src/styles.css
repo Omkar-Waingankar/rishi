@@ -659,13 +659,97 @@
   background-color: var(--bg-secondary);
   border: 1px solid var(--accent-violet);
   border-radius: 12px;
-  padding: 6px;
+  padding: 8px;
   gap: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+/* Input Header - contains context button and attachments */
+.input-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  min-height: 24px;
+}
+
 .input-text-section {
   flex: 1;
+}
+
+/* Context Button Styles */
+.context-button-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.context-button {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(155, 81, 224, 0.08);
+  border: 1px solid rgba(155, 81, 224, 0.15);
+  border-radius: 4px;
+  padding: 12px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent-violet);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  height: 20px;
+}
+
+.context-button:hover:not(:disabled) {
+  background: rgba(155, 81, 224, 0.12);
+  border-color: rgba(155, 81, 224, 0.25);
+}
+
+.context-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.context-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  min-width: 120px;
+}
+
+.context-dropdown-option {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-family: var(--font-ui);
+}
+
+.context-dropdown-option:hover {
+  background-color: var(--bg-primary);
+}
+
+.context-dropdown-option:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.context-dropdown-option:last-child {
+  border-radius: 0 0 8px 8px;
 }
 
 .input-footer {
@@ -687,7 +771,7 @@
   gap: 6px;
   background: transparent;
   border: none;
-  padding: 4px 8px;
+  padding: 4px 4px 4px 0px;
   font-size: 11px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -781,7 +865,7 @@
   resize: none;
   min-height: 24px;
   max-height: 120px;
-  padding: 6px 8px;
+  padding: 6px 6px 6px 0px;
   line-height: 1.4;
 }
 
@@ -1089,9 +1173,10 @@
 
 /* Image Attachment Styles */
 .attachment-strip {
-  background: var(--bg-secondary);
-  padding: 4px 12px 2px 12px;
-  border-radius: 12px 12px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .image-error {
@@ -1136,6 +1221,7 @@
 .image-previews {
   position: relative;
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 4px;
 }
@@ -1172,6 +1258,7 @@
   padding: 2px 6px;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  height: 20px;
 }
 
 .image-preview:hover {
@@ -1179,8 +1266,8 @@
 }
 
 .image-thumbnail-container {
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1188,20 +1275,20 @@
 }
 
 .image-thumbnail {
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   object-fit: cover;
   border-radius: 2px;
   background: white;
 }
 
 .remove-x {
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: bold;
   color: #9ca3af;
   background: transparent;

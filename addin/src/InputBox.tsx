@@ -21,8 +21,10 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
   const [images, setImages] = useState<ImageAttachment[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null);
+  const [showContextDropdown, setShowContextDropdown] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const contextButtonRef = useRef<HTMLDivElement>(null);
 
   // Constants for validation
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -238,6 +240,29 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
     { value: 'claude-3.7-sonnet', label: 'Claude 3.7 Sonnet' }
   ];
 
+  // Handle context dropdown
+  const handleContextSelect = (contextType: string): void => {
+    // For now, just close the dropdown - functionality will be added later
+    setShowContextDropdown(false);
+  };
+
+  // Handle click outside context dropdown
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (contextButtonRef.current && !contextButtonRef.current.contains(event.target as Node)) {
+        setShowContextDropdown(false);
+      }
+    };
+
+    if (showContextDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showContextDropdown]);
+
   // Load saved model preference on component mount
   React.useEffect(() => {
     const savedModel = localStorage.getItem('selectedModel');
@@ -250,66 +275,100 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
     <div className="input-box">
       <form onSubmit={handleSubmit}>
         <div className="input-container">
-          {/* Image attachments strip */}
-          {(images.length > 0 || imageError) && (
-            <div className="attachment-strip">
-              {imageError && (
-                <div className="image-error">
-                  <span className="image-error-text">{imageError}</span>
+          {/* Input header with context button and attachments */}
+          <div className="input-header">
+            {/* Context Button */}
+            <div className="context-button-container" ref={contextButtonRef}>
+              <button
+                type="button"
+                className="context-button"
+                onClick={() => setShowContextDropdown(!showContextDropdown)}
+                disabled={disabled}
+                aria-label="Add context"
+              >
+                @Add Context
+              </button>
+              {showContextDropdown && (
+                <div className="context-dropdown">
                   <button
                     type="button"
-                    className="image-error-dismiss"
-                    onClick={() => setImageError(null)}
-                    aria-label="Dismiss error"
+                    className="context-dropdown-option"
+                    onClick={() => handleContextSelect('active-tab')}
                   >
-                    ×
+                    Active Tab
+                  </button>
+                  <button
+                    type="button"
+                    className="context-dropdown-option"
+                    onClick={() => handleContextSelect('plots')}
+                  >
+                    Plots
                   </button>
                 </div>
               )}
-              {images.length > 0 && (
-                <div className="image-previews">
-                  {/* Hover preview */}
-                  {hoveredImageId && (
-                    <div className="image-hover-preview">
-                      {(() => {
-                        const hoveredImage = images.find(img => img.id === hoveredImageId);
-                        return hoveredImage ? (
-                          <img
-                            src={hoveredImage.previewUrl}
-                            alt={hoveredImage.file.name}
-                            className="hover-preview-image"
-                          />
-                        ) : null;
-                      })()}
-                    </div>
-                  )}
-                  
-                  {images.map(img => (
-                    <div 
-                      key={img.id} 
-                      className="image-preview"
-                      onMouseEnter={() => setHoveredImageId(img.id)}
-                      onMouseLeave={() => setHoveredImageId(null)}
-                      onClick={() => removeImage(img.id)}
-                    >
-                      <div className="image-thumbnail-container">
-                        {hoveredImageId === img.id ? (
-                          <div className="remove-x">×</div>
-                        ) : (
-                          <img
-                            src={img.previewUrl}
-                            alt={img.file.name}
-                            className="image-thumbnail"
-                          />
-                        )}
-                      </div>
-                      <span className="image-label">Image</span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          )}
+
+            {/* Image attachments strip */}
+            {(images.length > 0 || imageError) && (
+              <div className="attachment-strip">
+                {imageError && (
+                  <div className="image-error">
+                    <span className="image-error-text">{imageError}</span>
+                    <button
+                      type="button"
+                      className="image-error-dismiss"
+                      onClick={() => setImageError(null)}
+                      aria-label="Dismiss error"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+                {images.length > 0 && (
+                  <div className="image-previews">
+                    {/* Hover preview */}
+                    {hoveredImageId && (
+                      <div className="image-hover-preview">
+                        {(() => {
+                          const hoveredImage = images.find(img => img.id === hoveredImageId);
+                          return hoveredImage ? (
+                            <img
+                              src={hoveredImage.previewUrl}
+                              alt={hoveredImage.file.name}
+                              className="hover-preview-image"
+                            />
+                          ) : null;
+                        })()}
+                      </div>
+                    )}
+                    
+                    {images.map(img => (
+                      <div 
+                        key={img.id} 
+                        className="image-preview"
+                        onMouseEnter={() => setHoveredImageId(img.id)}
+                        onMouseLeave={() => setHoveredImageId(null)}
+                        onClick={() => removeImage(img.id)}
+                      >
+                        <div className="image-thumbnail-container">
+                          {hoveredImageId === img.id ? (
+                            <div className="remove-x">×</div>
+                          ) : (
+                            <img
+                              src={img.previewUrl}
+                              alt={img.file.name}
+                              className="image-thumbnail"
+                            />
+                          )}
+                        </div>
+                        <span className="image-label">Image</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="input-text-section">
             <textarea
