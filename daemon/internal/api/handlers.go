@@ -187,17 +187,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 
-					// Stream tool call start event to frontend
-					_ = json.NewEncoder(w).Encode(map[string]any{
-						"tool_call": map[string]any{
-							"name":   "console_exec",
-							"input":  input,
-							"status": "requesting",
-						},
-					})
-					flusher.Flush()
-
-					// Execute console exec command
+					streamToolCallStart(w, flusher, "console_exec", input)
 					response = consoleExec(input)
 
 				case "str_replace_based_edit_tool":
@@ -278,23 +268,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 						log.Error().Err(err).Msgf("Failed to parse console exec input for completion event")
 					}
 
-					switch response := response.(type) {
-					case consoleExecOutput:
-						_ = json.NewEncoder(w).Encode(map[string]any{
-							"tool_call": map[string]any{
-								"name":   "console_exec",
-								"input":  input,
-								"status": "completed",
-								"result": response,
-							},
-						})
-						flusher.Flush()
-
-						if response.Error != "" {
-							isError = true
-						}
-					}
-
+					isError = streamToolCallComplete(w, flusher, "console_exec", input, response)
 				case "str_replace_based_edit_tool":
 					var input textEditorInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
