@@ -11,6 +11,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const (
+	// R tool server configuration
+	rToolServerPort    = "8082"
+	rToolServerTimeout = 30 * time.Second
+)
+
 // TextEditorCommand represents the available commands for the text editor tool
 type TextEditorCommand string
 
@@ -92,7 +98,7 @@ type textEditorInsertOutput struct {
 
 // HTTP client for R tool server
 var toolClient = &http.Client{
-	Timeout: 30 * time.Second,
+	Timeout: rToolServerTimeout,
 }
 
 // makeToolRequest makes an HTTP POST request to the R tool server
@@ -102,7 +108,7 @@ func makeToolRequest(endpoint string, payload interface{}, response interface{})
 		return fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:8082%s", endpoint), bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:%s%s", rToolServerPort, endpoint), bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
