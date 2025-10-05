@@ -752,6 +752,52 @@
   border-radius: 0 0 8px 8px;
 }
 
+/* Context Pills */
+.context-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 2px 6px;
+  height: 20px;
+  font-size: 11px;
+  color: var(--text-primary);
+}
+
+.context-pill-icon {
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.context-pill-label {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.context-pill-remove {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 0;
+  margin-left: 2px;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.context-pill-remove:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
 .input-footer {
   display: flex;
   align-items: center;

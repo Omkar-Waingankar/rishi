@@ -45,7 +45,7 @@ export interface Message {
 }
 
 export interface InputBoxProps {
-  onSendMessage: (content: MessageContent[], model: string) => void;
+  onSendMessage: (content: MessageContent[], displayContent: MessageContent[], model: string) => void;
   disabled: boolean;
   isStreaming: boolean;
   onStopStreaming: () => void;
@@ -67,5 +67,24 @@ export interface ChatResponse {
     result?: string;
   };
   is_final?: boolean;
+  error?: string;
+}
+
+// Context state types
+export interface ContextState {
+  activeTab: boolean;
+  plot: boolean;
+}
+
+// API response types
+export interface ActiveTabResponse {
+  filename: string;
+  content: string;
+  error?: string;
+}
+
+export interface PlotResponse {
+  imageBase64: string;
+  mediaType: string;
   error?: string;
 }

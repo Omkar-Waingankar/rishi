@@ -96,7 +96,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		default:
 			// ignore
 		}
-		log.Info().Msgf("history message %d: role %s, %d content blocks", i, m.Role, len(m.Content))
+		log.Info().Msgf("history message %d: role %s, %d content blocks, content: %s", i, m.Role, len(m.Content), formatMessageContentArrayForDebug(m.Content))
 	}
 
 	// Handle the new user message content
@@ -111,7 +111,7 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 			msgs = append(msgs, anthropic.NewUserMessage(contentBlocks...))
 		}
 	}
-	log.Info().Msgf("new user message: %d content blocks", len(in.Content))
+	log.Info().Msgf("new user message: %d content blocks, content: %s", len(in.Content), formatMessageContentArrayForDebug(in.Content))
 
 	// Start streaming with the official Anthropic SDK
 	model := anthropic.ModelClaudeSonnet4_20250514

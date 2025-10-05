@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { InputBoxProps, ImageMimeType, MessageContent } from './types';
+import { InputBoxProps, ImageMimeType, MessageContent, ContextState, ActiveTabResponse, PlotResponse } from './types';
 import ModelDropdown from './ModelDropdown';
 
 interface DropdownOption {
@@ -22,6 +22,10 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
   const [imageError, setImageError] = useState<string | null>(null);
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null);
   const [showContextDropdown, setShowContextDropdown] = useState<boolean>(false);
+  const [contextState, setContextState] = useState<ContextState>({
+    activeTab: false,
+    plot: false
+  });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contextButtonRef = useRef<HTMLDivElement>(null);
@@ -167,15 +171,39 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
 
     if ((message.trim() || images.length > 0) && !disabled) {
       const content: MessageContent[] = [];
-      
-      // Add text content if present
-      if (message.trim()) {
+
+      // Build text content for backend (includes context)
+      let textContent = message.trim();
+      if (contextState.activeTab) {
+        const activeTabData = await fetchActiveTabContext();
+        if (activeTabData) {
+          const activeTabText = `<active_tab filename="${activeTabData.filename}">\n${activeTabData.content}\n</active_tab>`;
+          textContent = textContent ? `${textContent}\n\n${activeTabText}` : activeTabText;
+        }
+      }
+
+      // Add text content if present (for backend)
+      if (textContent) {
         content.push({
           type: 'text',
-          content: message.trim()
+          content: textContent
         });
       }
-      
+
+      // Add plot context if selected (as image content)
+      if (contextState.plot) {
+        console.log('fetching plot context');
+        const plotData = await fetchPlotContext();
+        console.log('plotData', plotData);
+        if (plotData) {
+          content.push({
+            type: 'image',
+            mediaType: plotData.mediaType as ImageMimeType,
+            dataBase64: plotData.imageBase64
+          });
+        }
+      }
+
       // Add image content
       for (const img of images) {
         try {
@@ -191,8 +219,26 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
           return;
         }
       }
-      
-      onSendMessage(content, selectedModel);
+
+      // Send the combined message to backend, but display only user's text
+      const displayContent: MessageContent[] = [];
+
+      // Add only user's original text for display, not images or other context
+      if (message.trim()) {
+        displayContent.push({
+          type: 'text',
+          content: message.trim()
+        });
+      }
+
+      console.log('content', content);
+      console.log('displayContent', displayContent);
+
+      // Send to backend: combined content (user text + context)
+      // Display in UI: only user's original content
+      onSendMessage(content, displayContent, selectedModel);
+
+      // Reset all states except context states
       setMessage('');
       setImages(prev => {
         // Clean up preview URLs
@@ -242,8 +288,37 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
 
   // Handle context dropdown
   const handleContextSelect = (contextType: string): void => {
-    // For now, just close the dropdown - functionality will be added later
+    if (contextType === 'active-tab' && !contextState.activeTab) {
+      setContextState(prev => ({ ...prev, activeTab: !prev.activeTab }));
+    } else if (contextType === 'plots' && !contextState.plot) {
+      setContextState(prev => ({ ...prev, plot: !prev.plot }));
+    }
     setShowContextDropdown(false);
+  };
+
+  // Fetch context data
+  const fetchActiveTabContext = async (): Promise<ActiveTabResponse | null> => {
+    try {
+      const response = await fetch('http://localhost:8082/context/active_tab');
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.error ? null : data;
+    } catch (error) {
+      console.error('Error fetching active tab:', error);
+      return null;
+    }
+  };
+
+  const fetchPlotContext = async (): Promise<PlotResponse | null> => {
+    try {
+      const response = await fetch('http://localhost:8082/context/plot');
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.error ? null : data;
+    } catch (error) {
+      console.error('Error fetching plot:', error);
+      return null;
+    }
   };
 
   // Handle click outside context dropdown
@@ -288,25 +363,56 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
               >
                 @Add Context
               </button>
-              {showContextDropdown && (
-                <div className="context-dropdown">
-                  <button
-                    type="button"
-                    className="context-dropdown-option"
-                    onClick={() => handleContextSelect('active-tab')}
-                  >
-                    Active Tab
-                  </button>
-                  <button
-                    type="button"
-                    className="context-dropdown-option"
-                    onClick={() => handleContextSelect('plots')}
-                  >
-                    Plots
-                  </button>
-                </div>
-              )}
+                {showContextDropdown && (
+                  <div className="context-dropdown">
+                    <button
+                      type="button"
+                      className="context-dropdown-option"
+                      onClick={() => handleContextSelect('active-tab')}
+                    >
+                      Active Tab
+                    </button>
+                    <button
+                      type="button"
+                      className="context-dropdown-option"
+                      onClick={() => handleContextSelect('plots')}
+                    >
+                      Plots
+                    </button>
+                  </div>
+                )}
             </div>
+
+            {/* Context Pills */}
+            {contextState.activeTab && (
+              <div className="context-pill">
+                <span className="context-pill-icon">📄</span>
+                <span className="context-pill-label">Active Tab</span>
+                <button
+                  type="button"
+                  className="context-pill-remove"
+                  onClick={() => setContextState(prev => ({ ...prev, activeTab: false }))}
+                  aria-label="Remove active tab context"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            
+            {contextState.plot && (
+              <div className="context-pill">
+                <span className="context-pill-icon">📊</span>
+                <span className="context-pill-label">Plot</span>
+                <button
+                  type="button"
+                  className="context-pill-remove"
+                  onClick={() => setContextState(prev => ({ ...prev, plot: false }))}
+                  aria-label="Remove plot context"
+                >
+                  ×
+                </button>
+              </div>
+            )}
 
             {/* Image attachments strip */}
             {(images.length > 0 || imageError) && (

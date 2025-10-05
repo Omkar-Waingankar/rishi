@@ -218,14 +218,14 @@ const ChatApp: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSendMessage = async (content: MessageContent[], selectedModel: string): Promise<void> => {
+  const handleSendMessage = async (content: MessageContent[], displayContent: MessageContent[], selectedModel: string): Promise<void> => {
     if (content.length === 0) return;
 
     const userMessage: Message = {
       id: Date.now(),
       sender: 'user',
       timestamp: new Date(),
-      content: content
+      content: displayContent
     };
 
     setMessages(prev => [...prev, userMessage]);
