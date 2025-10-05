@@ -12,7 +12,7 @@ Works seamlessly as a RStudio Addin.
 <table>
   <tr>
     <td width="30%" valign="top"><b>What is Rishi?</b></td>
-    <td width="70%" valign="top">Rishi is an open-source AI coding agent for R that integrates seamlessly into RStudio. Unlike ChatGPT and similar tools, Rishi sees your R project, data, and visualizations — no more copy-pasting context back and forth.</td>
+    <td width="70%" valign="top">Rishi is an open-source AI coding agent for R that integrates seamlessly into RStudio.</td>
   </tr>
   <tr>
     <td width="30%" valign="top"><b>How is Rishi different from ChatGPT?</b></td>
