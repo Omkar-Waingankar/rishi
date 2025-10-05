@@ -13,6 +13,7 @@ import (
 // Config represents the Rishi configuration structure
 type Config struct {
 	AnthropicAPIKey string `json:"anthropic_api_key,omitempty"`
+	OpenAIAPIKey    string `json:"openai_api_key,omitempty"`
 }
 
 // getConfigDir returns the platform-appropriate config directory path for Rishi
@@ -132,8 +133,8 @@ func SaveConfig(config *Config) error {
 	return nil
 }
 
-// GetAPIKey retrieves the ANTHROPIC_API_KEY from the config file
-func GetAPIKey() (string, error) {
+// GetAnthropicAPIKey retrieves the ANTHROPIC_API_KEY from the config file
+func GetAnthropicAPIKey() (string, error) {
 	config, err := LoadConfig()
 	if err != nil {
 		return "", err
@@ -141,8 +142,8 @@ func GetAPIKey() (string, error) {
 	return config.AnthropicAPIKey, nil
 }
 
-// SetAPIKey saves the ANTHROPIC_API_KEY to the config file
-func SetAPIKey(apiKey string) error {
+// SetAnthropicAPIKey saves the ANTHROPIC_API_KEY to the config file
+func SetAnthropicAPIKey(apiKey string) error {
 	config, err := LoadConfig()
 	if err != nil {
 		// If we can't load config, start with empty config
@@ -150,5 +151,24 @@ func SetAPIKey(apiKey string) error {
 	}
 
 	config.AnthropicAPIKey = apiKey
+	return SaveConfig(config)
+}
+
+// GetOpenAIAPIKey retrieves the OPENAI_API_KEY from the config file
+func GetOpenAIAPIKey() (string, error) {
+	config, err := LoadConfig()
+	if err != nil {
+		return "", err
+	}
+	return config.OpenAIAPIKey, nil
+}
+
+func SetOpenAIAPIKey(apiKey string) error {
+	config, err := LoadConfig()
+	if err != nil {
+		// If we can't load config, start with empty config
+		config = &Config{}
+	}
+	config.OpenAIAPIKey = apiKey
 	return SaveConfig(config)
 }

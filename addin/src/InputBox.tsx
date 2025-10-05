@@ -5,11 +5,12 @@ import ModelDropdown from './ModelDropdown';
 interface DropdownOption {
   value: string;
   label: string;
+  disabled?: boolean;
 }
 
-const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreaming, onStopStreaming, safeRoot, triggerStatusBarError }) => {
+const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreaming, onStopStreaming, safeRoot, triggerStatusBarError, apiKeyStatus }) => {
   const [message, setMessage] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<string>('claude-4-sonnet');
+  const [selectedModel, setSelectedModel] = useState<string>('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
@@ -51,21 +52,38 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
 
   const handleModelChange = (value: string): void => {
     setSelectedModel(value);
-    localStorage.setItem('selectedModel', value);
   };
 
   const modelOptions: DropdownOption[] = [
-    { value: 'claude-4-sonnet', label: 'Claude 4 Sonnet' },
-    { value: 'claude-3.7-sonnet', label: 'Claude 3.7 Sonnet' }
+    { 
+      value: 'claude-4-sonnet', 
+      label: apiKeyStatus?.anthropic.has_key ? 'Claude 4 Sonnet' : 'Claude 4 Sonnet (missing API key)',
+      disabled: !apiKeyStatus?.anthropic.has_key
+    },
+    { 
+      value: 'claude-3.7-sonnet', 
+      label: apiKeyStatus?.anthropic.has_key ? 'Claude 3.7 Sonnet' : 'Claude 3.7 Sonnet (missing API key)',
+      disabled: !apiKeyStatus?.anthropic.has_key
+    },
+    { 
+      value: 'gpt-4o', 
+      label: apiKeyStatus?.openai.has_key ? 'GPT-4o' : 'GPT-4o (missing API key)',
+      disabled: !apiKeyStatus?.openai.has_key
+    },
+    { 
+      value: 'gpt-4o-mini', 
+      label: apiKeyStatus?.openai.has_key ? 'GPT-4o-mini' : 'GPT-4o-mini (missing API key)',
+      disabled: !apiKeyStatus?.openai.has_key
+    }
   ];
 
-  // Load saved model preference on component mount
+  // Default to first available (non-disabled) model when API key status changes
   React.useEffect(() => {
-    const savedModel = localStorage.getItem('selectedModel');
-    if (savedModel) {
-      setSelectedModel(savedModel);
+    const firstAvailableModel = modelOptions.find(option => !option.disabled);
+    if (firstAvailableModel && firstAvailableModel.value !== selectedModel) {
+      setSelectedModel(firstAvailableModel.value);
     }
-  }, []);
+  }, [apiKeyStatus]);
 
   return (
     <div className="input-box">

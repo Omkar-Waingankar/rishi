@@ -17,11 +17,8 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({ value, onChange, disabled
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   let selectedOption = options.find(option => option.value === value);
-  if (!selectedOption) { // Default to Claude 4 Sonnet if no option is selected
-    selectedOption = {
-      value: "claude-4-sonnet",
-      label: "Claude 4 Sonnet"
-    }
+  if (!selectedOption) { // Default to first available (non-disabled) option
+    selectedOption = options.find(option => !option.disabled) || options[0];
   }
 
   const handleOptionClick = (optionValue: string) => {
@@ -87,10 +84,12 @@ const ModelDropdown: React.FC<ModelDropdownProps> = ({ value, onChange, disabled
             <button
               key={option.value}
               type="button"
-              className={`dropdown-option ${option.value === value ? 'selected' : ''}`}
-              onClick={() => handleOptionClick(option.value)}
+              className={`dropdown-option ${option.value === value ? 'selected' : ''} ${option.disabled ? 'disabled' : ''}`}
+              onClick={() => !option.disabled && handleOptionClick(option.value)}
               role="option"
               aria-selected={option.value === value}
+              disabled={option.disabled}
+              title={option.disabled ? 'API key required' : ''}
             >
               {option.label}
             </button>

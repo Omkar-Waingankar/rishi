@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 
 interface ApiKeySetupProps {
   onApiKeySubmit: (apiKey: string) => Promise<void>;
+  selectedProvider: string;
+  onProviderChange: (provider: string) => void;
 }
 
-const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySubmit }) => {
+const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySubmit, selectedProvider, onProviderChange }) => {
   const [apiKey, setApiKey] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isValidating, setIsValidating] = useState<boolean>(false);
   const [isValid, setIsValid] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Validate API key format and test with Anthropic API via backend
+  // Validate API key format and test with provider API via backend
   useEffect(() => {
     const validateApiKey = async () => {
       const trimmedKey = apiKey.trim();
@@ -22,13 +24,14 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySubmit }) => {
         return;
       }
 
-      // Check for sk-ant prefix
-      if (!trimmedKey.startsWith('sk-ant-')) {
+      // Check for correct prefix based on provider
+      const expectedPrefix = selectedProvider === 'anthropic' ? 'sk-ant-' : 'sk-';
+      if (!trimmedKey.startsWith(expectedPrefix)) {
         setIsValid(false);
         return;
       }
 
-      // Check minimum length (Anthropic keys are typically longer)
+      // Check minimum length
       if (trimmedKey.length < 20) {
         setIsValid(false);
         return;
@@ -37,7 +40,7 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySubmit }) => {
       // Test with backend validation endpoint
       setIsValidating(true);
       try {
-        const response = await fetch('http://localhost:8080/api/key/validate', {
+        const response = await fetch(`http://localhost:8080/api/key/${selectedProvider}/validate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -64,7 +67,7 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySubmit }) => {
     // Debounce the validation to avoid too many API calls
     const timeoutId = setTimeout(validateApiKey, 500);
     return () => clearTimeout(timeoutId);
-  }, [apiKey]);
+  }, [apiKey, selectedProvider]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -85,7 +88,40 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySubmit }) => {
   return (
     <div className="api-key-setup">
       <h3>Welcome to Rishi</h3>
-      <p>To get started, please enter your Anthropic API key. Don't have an API key? <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">Get one here</a></p>
+      <p>To get started, please select a provider and enter your API key.</p>
+
+      <div className="provider-selection">
+        <label>
+          <input
+            type="radio"
+            value="anthropic"
+            checked={selectedProvider === 'anthropic'}
+            onChange={(e) => onProviderChange(e.target.value)}
+          />
+          Anthropic (Claude)
+        </label>
+        <label>
+          <input
+            type="radio"
+            value="openai"
+            checked={selectedProvider === 'openai'}
+            onChange={(e) => onProviderChange(e.target.value)}
+          />
+          OpenAI (GPT)
+        </label>
+      </div>
+
+      <p>
+        {selectedProvider === 'anthropic' ? (
+          <>Don't have an Anthropic API key? <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">Get one here</a></>
+        ) : (
+          <>Don't have an OpenAI API key? <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">Get one here</a></>
+        )}
+      </p>
+
+      <p className="onboarding-note">
+        <em>You can add other providers later in settings. For now, just choose one to get started.</em>
+      </p>
 
       <form onSubmit={handleSubmit}>
         <div className="api-key-input-wrapper">
@@ -93,7 +129,7 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySubmit }) => {
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="sk-ant-..."
+            placeholder={selectedProvider === 'anthropic' ? 'sk-ant-...' : 'sk-...'}
             disabled={isSubmitting}
             autoFocus
             className="api-key-input"
