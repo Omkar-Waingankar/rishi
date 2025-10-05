@@ -172,25 +172,28 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
     if ((message.trim() || images.length > 0) && !disabled) {
       const content: MessageContent[] = [];
 
-      // Build text content for backend (includes context)
-      let textContent = message.trim();
+      // Add user's text content (visible)
+      if (message.trim()) {
+        content.push({
+          type: 'text',
+          content: message.trim()
+        });
+      }
+
+      // Add active tab context as separate invisible text item
       if (contextState.activeTab) {
         const activeTabData = await fetchActiveTabContext();
         if (activeTabData) {
           const activeTabText = `<active_tab filename="${activeTabData.filename}">\n${activeTabData.content}\n</active_tab>`;
-          textContent = textContent ? `${textContent}\n\n${activeTabText}` : activeTabText;
+          content.push({
+            type: 'text',
+            content: activeTabText,
+            invisible: true
+          });
         }
       }
 
-      // Add text content if present (for backend)
-      if (textContent) {
-        content.push({
-          type: 'text',
-          content: textContent
-        });
-      }
-
-      // Add plot context if selected (as image content)
+      // Add plot context if selected (as invisible image content)
       if (contextState.plot) {
         console.log('fetching plot context');
         const plotData = await fetchPlotContext();
@@ -199,12 +202,13 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
           content.push({
             type: 'image',
             mediaType: plotData.mediaType as ImageMimeType,
-            dataBase64: plotData.imageBase64
+            dataBase64: plotData.imageBase64,
+            invisible: true
           });
         }
       }
 
-      // Add image content
+      // Add user's image content (visible)
       for (const img of images) {
         try {
           const base64 = await fileToBase64(img.file);
@@ -220,23 +224,10 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
         }
       }
 
-      // Send the combined message to backend, but display only user's text
-      const displayContent: MessageContent[] = [];
-
-      // Add only user's original text for display, not images or other context
-      if (message.trim()) {
-        displayContent.push({
-          type: 'text',
-          content: message.trim()
-        });
-      }
-
       console.log('content', content);
-      console.log('displayContent', displayContent);
 
-      // Send to backend: combined content (user text + context)
-      // Display in UI: only user's original content
-      onSendMessage(content, displayContent, selectedModel);
+      // Send single content array with invisible field for context
+      onSendMessage(content, selectedModel);
 
       // Reset all states except context states
       setMessage('');

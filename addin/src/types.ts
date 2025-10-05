@@ -7,6 +7,7 @@ export type ImageMimeType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/g
 interface TextContent {
   type: 'text';
   content: string;
+  invisible?: boolean;
 }
 
 // Image content
@@ -14,12 +15,14 @@ interface ImageContent {
   type: 'image';
   mediaType: ImageMimeType;
   dataBase64: string;
+  invisible?: boolean;
 }
 
 // Tool call content
 interface ToolCallContent {
   type: 'tool_call';
   content: string;
+  invisible?: boolean;
   toolCall?: {
     name: string;
     status: ToolCallStatus;
@@ -32,6 +35,7 @@ interface ToolCallContent {
 interface ErrorContent {
   type: 'error';
   content: string;
+  invisible?: boolean;
 }
 
 // Union of all content types
@@ -45,7 +49,7 @@ export interface Message {
 }
 
 export interface InputBoxProps {
-  onSendMessage: (content: MessageContent[], displayContent: MessageContent[], model: string) => void;
+  onSendMessage: (content: MessageContent[], model: string) => void;
   disabled: boolean;
   isStreaming: boolean;
   onStopStreaming: () => void;
