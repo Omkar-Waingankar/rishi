@@ -1,17 +1,45 @@
 import { ToolCallStatus } from './tool_types';
 
-interface MessageContent {
-  type: 'text' | 'tool_call' | 'error' | 'safe_root_error';
+// Define supported image MIME types
+export type ImageMimeType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
+
+// Text content
+interface TextContent {
+  type: 'text';
   content: string;
+  invisible?: boolean;
+}
+
+// Image content
+interface ImageContent {
+  type: 'image';
+  mediaType: ImageMimeType;
+  dataBase64: string;
+  invisible?: boolean;
+}
+
+// Tool call content
+interface ToolCallContent {
+  type: 'tool_call';
+  content: string;
+  invisible?: boolean;
   toolCall?: {
     name: string;
     status: ToolCallStatus;
     input?: object;
     result?: string;
   };
-  refreshAction?: () => void;
-  isExpanded?: boolean;
 }
+
+// Error content
+interface ErrorContent {
+  type: 'error';
+  content: string;
+  invisible?: boolean;
+}
+
+// Union of all content types
+export type MessageContent = TextContent | ImageContent | ToolCallContent | ErrorContent;
 
 export interface Message {
   id: number;
@@ -21,7 +49,7 @@ export interface Message {
 }
 
 export interface InputBoxProps {
-  onSendMessage: (message: string, model: string) => void;
+  onSendMessage: (content: MessageContent[], model: string) => void;
   disabled: boolean;
   isStreaming: boolean;
   onStopStreaming: () => void;
@@ -47,5 +75,24 @@ export interface ChatResponse {
     result?: string;
   };
   is_final?: boolean;
+  error?: string;
+}
+
+// Context state types
+export interface ContextState {
+  activeTab: boolean;
+  plot: boolean;
+}
+
+// API response types
+export interface ActiveTabResponse {
+  filename: string;
+  content: string;
+  error?: string;
+}
+
+export interface PlotResponse {
+  imageBase64: string;
+  mediaType: string;
   error?: string;
 }

@@ -465,6 +465,8 @@ startToolRPC <- function() {
     plumber::pr_filter("cors", cors_filter) %>%
     plumber::pr_get("/healthz", healthz_endpoint) %>%
     plumber::pr_get("/safe_root", safe_root_endpoint) %>%
+    plumber::pr_get("/context/active_tab", get_active_tab_context) %>%
+    plumber::pr_get("/context/plot", get_plot_context) %>%
     plumber::pr_post("/list", list_files_endpoint) %>%
     plumber::pr_post("/text_editor/view", text_editor_view_endpoint) %>%
     plumber::pr_post("/text_editor/str_replace", text_editor_str_replace_endpoint) %>%

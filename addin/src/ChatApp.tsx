@@ -4,7 +4,7 @@ import InputBox from './InputBox';
 import StatusBar from './StatusBar';
 import ApiKeySetup from './ApiKeySetup';
 import Settings from './Settings';
-import { Message, ChatResponse } from './types';
+import { Message, ChatResponse, MessageContent } from './types';
 import { Settings as SettingsIcon } from '@mui/icons-material';
 import {
   ToolCommand,
@@ -229,17 +229,17 @@ const ChatApp: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSendMessage = async (messageText: string, selectedModel: string): Promise<void> => {
-    if (!messageText.trim()) return;
+  const handleSendMessage = async (content: MessageContent[], selectedModel: string): Promise<void> => {
+    if (content.length === 0) return;
+
+    // Filter out invisible content for display
+    const displayContent = content.filter(item => !item.invisible);
 
     const userMessage: Message = {
       id: Date.now(),
       sender: 'user',
       timestamp: new Date(),
-      content: [{
-        type: 'text',
-        content: messageText
-      }]
+      content: displayContent
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -250,13 +250,15 @@ const ChatApp: React.FC = () => {
 
     try {
       // Convert messages to history format (exclude the initial greeting message)
-      const conversationHistory: Array<{role: string, content: string}> = [];
+      // Backend expects content arrays for all messages
+      const conversationHistory: Array<{role: string, content: MessageContent[]}> = [];
       
       messages.slice(1).forEach(msg => { // Skip the initial greeting message
         if (msg.sender === 'user') {
+          // For user messages, we need to send the actual content structure to backend
           conversationHistory.push({
             role: 'user',
-            content: msg.content.map(c => c.content).join('')
+            content: msg.content
           });
         } else if (msg.sender === 'assistant') {
           // Process content chronologically, maintaining interleaved structure
@@ -271,7 +273,7 @@ const ChatApp: React.FC = () => {
               if (currentTextContent.trim()) {
                 conversationHistory.push({
                   role: 'assistant',
-                  content: currentTextContent
+                  content: [{ type: 'text', content: currentTextContent }]
                 });
                 currentTextContent = ''; // Reset
               }
@@ -281,7 +283,7 @@ const ChatApp: React.FC = () => {
                 const inputStr = JSON.stringify(contentItem.toolCall.input || {});
                 conversationHistory.push({
                   role: 'assistant', 
-                  content: `[Using tool: ${contentItem.toolCall.name} with input: ${inputStr}]`
+                  content: [{ type: 'text', content: `[Using tool: ${contentItem.toolCall.name} with input: ${inputStr}]` }]
                 });
               }
               
@@ -292,7 +294,7 @@ const ChatApp: React.FC = () => {
               ) {
                 conversationHistory.push({
                   role: 'user',
-                  content: `[Result for tool ${contentItem.toolCall.name}: ${contentItem.toolCall.result}]`
+                  content: [{ type: 'text', content: `[Result for tool ${contentItem.toolCall.name}: ${contentItem.toolCall.result}]` }]
                 });
               }
             }
@@ -301,7 +303,7 @@ const ChatApp: React.FC = () => {
           if (currentTextContent.trim()) {
             conversationHistory.push({
               role: 'assistant',
-              content: currentTextContent
+              content: [{ type: 'text', content: currentTextContent }]
             });
           }
         }
@@ -329,7 +331,7 @@ const ChatApp: React.FC = () => {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          message: messageText,
+          message: content,
           history: conversationHistory
         }),
         signal: abortControllerRef.current.signal
