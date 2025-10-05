@@ -11,63 +11,29 @@ import (
 // handleOpenAIChat proxies a streaming request with history to OpenAI and emits NDJSON lines
 // of the form {"text": "..."} and a final {"is_final": true}.
 func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	if !validateChatRequest(w, r) {
 		return
 	}
 
-	// Get API key from header or config
-	apiKey := r.Header.Get("X-Provider-API-Key")
-	if apiKey == "" {
-		// Try to get from config
-		var err error
-		apiKey, err = GetOpenAIAPIKey()
-		if err != nil || apiKey == "" {
-			http.Error(w, "missing X-Provider-API-Key header and no OpenAI API key in config", http.StatusUnauthorized)
-			return
-		}
-	}
-
-	model := openai.GPT4o
-
-	selectedModel := r.Header.Get("X-Model")
-	if selectedModel != "" {
-		switch selectedModel {
-		case "gpt-4o":
-			model = openai.GPT4o
-		case "gpt-4o-mini":
-			model = openai.GPT4oMini
-		default:
-			model = openai.GPT4o
-		}
+	// Get API key from header
+	apiKey, ok := validateAPIKey(w, r)
+	if !ok {
+		return
 	}
 
 	// Create OpenAI client
 	client := openai.NewClient(apiKey)
 
-	type inboundMessage struct {
-		Role    string           `json:"role"`
-		Content []inboundContent `json:"content"`
+	in, err := parseChatRequest(r)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to parse chat request")
+		http.Error(w, "Failed to parse chat request", http.StatusBadRequest)
+		return
 	}
-	type reqBody struct {
-		History []inboundMessage `json:"history"`
-		Content []inboundContent `json:"content"`
-		MaxTok  int              `json:"max_tokens"`
-	}
-	var in reqBody
-	_ = json.NewDecoder(r.Body).Decode(&in) // tolerate empty/malformed JSON
+	setupStreamingHeaders(w)
 
-	w.Header().Set("Content-Type", "application/x-ndjson")
-	w.Header().Set("Cache-Control", "no-cache, no-transform")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-
-	flusher, ok := w.(http.Flusher)
+	flusher, ok := validateFlusher(w)
 	if !ok {
-		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 		return
 	}
 
@@ -111,6 +77,20 @@ func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) 
 			Role:    openai.ChatMessageRoleUser,
 			Content: currentMessageContent,
 		})
+	}
+
+	model := openai.GPT4o
+
+	selectedModel := r.Header.Get("X-Model")
+	if selectedModel != "" {
+		switch selectedModel {
+		case "gpt-4o":
+			model = openai.GPT4o
+		case "gpt-4o-mini":
+			model = openai.GPT4oMini
+		default:
+			model = openai.GPT4o
+		}
 	}
 
 	maxTokens := in.MaxTok

@@ -13,19 +13,13 @@ import (
 // handleAnthropicChat proxies a streaming request with history to Anthropic and emits NDJSON lines
 // of the form {"text": "..."} and a final {"is_final": true}.
 func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	if !validateChatRequest(w, r) {
 		return
 	}
 
 	// Get API key from header
-	apiKey := r.Header.Get("X-Provider-API-Key")
-	if apiKey == "" {
-		http.Error(w, "missing X-Provider-API-Key header", http.StatusUnauthorized)
+	apiKey, ok := validateAPIKey(w, r)
+	if !ok {
 		return
 	}
 
@@ -34,28 +28,16 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 		option.WithAPIKey(apiKey),
 	)
 
-	type inboundMessage struct {
-		Role    string           `json:"role"`
-		Content []inboundContent `json:"content"`
+	in, err := parseChatRequest(r)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to parse chat request")
+		http.Error(w, "Failed to parse chat request", http.StatusBadRequest)
+		return
 	}
+	setupStreamingHeaders(w)
 
-	type reqBody struct {
-		History []inboundMessage `json:"history"`
-		Content []inboundContent `json:"content"` // Changed from Message string
-		Model   string           `json:"model"`
-		MaxTok  int              `json:"max_tokens"`
-	}
-
-	var in reqBody
-	_ = json.NewDecoder(r.Body).Decode(&in) // tolerate empty/malformed JSON
-
-	w.Header().Set("Content-Type", "application/x-ndjson")
-	w.Header().Set("Cache-Control", "no-cache, no-transform")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-
-	flusher, ok := w.(http.Flusher)
+	flusher, ok := validateFlusher(w)
 	if !ok {
-		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 		return
 	}
 
