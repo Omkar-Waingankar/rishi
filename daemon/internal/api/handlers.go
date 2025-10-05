@@ -8,15 +8,16 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/rs/zerolog/log"
+	"github.com/sashabaranov/go-openai"
 )
 
 const (
 	defaultMaxTokens = 8192
 )
 
-// handleChat proxies a streaming request with history to Anthropic and emits NDJSON lines
+// handleAnthropicChat proxies a streaming request with history to Anthropic and emits NDJSON lines
 // of the form {"text": "..."} and a final {"is_final": true}.
-func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
+func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -27,9 +28,9 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get API key from header
-	apiKey := r.Header.Get("X-Anthropic-API-Key")
+	apiKey := r.Header.Get("X-Provider-API-Key")
 	if apiKey == "" {
-		http.Error(w, "missing X-Anthropic-API-Key header", http.StatusUnauthorized)
+		http.Error(w, "missing X-Provider-API-Key header", http.StatusUnauthorized)
 		return
 	}
 
@@ -116,11 +117,8 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 	// Start streaming with the official Anthropic SDK
 	model := anthropic.ModelClaudeSonnet4_20250514
 
-	// Check for model in request body first, then X-Model header
-	selectedModel := in.Model
-	if selectedModel == "" {
-		selectedModel = r.Header.Get("X-Model")
-	}
+	// Get model from X-Model header
+	selectedModel := r.Header.Get("X-Model")
 
 	if selectedModel != "" {
 		// Map model names from frontend to Anthropic SDK models
@@ -344,4 +342,148 @@ func (s *ServerClient) handleChat(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+}
+
+// handleOpenAIChat proxies a streaming request with history to OpenAI and emits NDJSON lines
+// of the form {"text": "..."} and a final {"is_final": true}.
+func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get API key from header or config
+	apiKey := r.Header.Get("X-Provider-API-Key")
+	if apiKey == "" {
+		// Try to get from config
+		var err error
+		apiKey, err = GetOpenAIAPIKey()
+		if err != nil || apiKey == "" {
+			http.Error(w, "missing X-Provider-API-Key header and no OpenAI API key in config", http.StatusUnauthorized)
+			return
+		}
+	}
+
+	model := openai.GPT4o
+
+	selectedModel := r.Header.Get("X-Model")
+	if selectedModel != "" {
+		switch selectedModel {
+		case "gpt-4o":
+			model = openai.GPT4o
+		case "gpt-4o-mini":
+			model = openai.GPT4oMini
+		default:
+			model = openai.GPT4o
+		}
+	}
+
+	// Create OpenAI client
+	client := openai.NewClient(apiKey)
+
+	type inboundMessage struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	}
+	type reqBody struct {
+		History []inboundMessage `json:"history"`
+		Message string           `json:"message"`
+		MaxTok  int              `json:"max_tokens"`
+	}
+	var in reqBody
+	_ = json.NewDecoder(r.Body).Decode(&in) // tolerate empty/malformed JSON
+
+	w.Header().Set("Content-Type", "application/x-ndjson")
+	w.Header().Set("Cache-Control", "no-cache, no-transform")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+
+	// Convert history to OpenAI format
+	var messages []openai.ChatCompletionMessage
+
+	// Add system message
+	messages = append(messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleSystem,
+		Content: RISHI_SYSTEM_PROMPT,
+	})
+
+	// Add conversation history
+	for _, m := range in.History {
+		switch m.Role {
+		case "user":
+			messages = append(messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleUser,
+				Content: m.Content,
+			})
+		case "assistant":
+			messages = append(messages, openai.ChatCompletionMessage{
+				Role:    openai.ChatMessageRoleAssistant,
+				Content: m.Content,
+			})
+		}
+	}
+
+	// Add current user message
+	if in.Message != "" {
+		messages = append(messages, openai.ChatCompletionMessage{
+			Role:    openai.ChatMessageRoleUser,
+			Content: in.Message,
+		})
+	}
+
+	maxTokens := in.MaxTok
+	if maxTokens == 0 {
+		maxTokens = defaultMaxTokens
+	}
+
+	// Create streaming request
+	req := openai.ChatCompletionRequest{
+		Model:       model,
+		Messages:    messages,
+		MaxTokens:   maxTokens,
+		Temperature: 0.1,
+		Stream:      true,
+	}
+
+	stream, err := client.CreateChatCompletionStream(r.Context(), req)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to create OpenAI stream")
+		_ = json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+		flusher.Flush()
+		return
+	}
+	defer stream.Close()
+
+	// Stream responses
+	for {
+		response, err := stream.Recv()
+		if err != nil {
+			if err.Error() == "stream finished" {
+				break
+			}
+			log.Error().Err(err).Msg("OpenAI stream error")
+			_ = json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+			flusher.Flush()
+			return
+		}
+
+		// Send text content
+		if len(response.Choices) > 0 && response.Choices[0].Delta.Content != "" {
+			_ = json.NewEncoder(w).Encode(map[string]any{"text": response.Choices[0].Delta.Content})
+			flusher.Flush()
+		}
+	}
+
+	// Send final message
+	_ = json.NewEncoder(w).Encode(map[string]any{"is_final": true})
+	flusher.Flush()
 }

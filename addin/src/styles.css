@@ -39,6 +39,26 @@
   font-size: 16px;
   font-weight: 600;
   color: white;
+  flex: 1;
+}
+
+.settings-button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0.8;
+}
+
+.settings-button:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Status Bar */
@@ -1199,6 +1219,157 @@
 
 .message-list::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
+}
+
+/* Settings Fullscreen */
+.settings-fullscreen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  font-family: var(--font-ui);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--accent-violet) 0%, var(--accent-blue) 100%);
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  flex: 1;
+}
+
+.settings-close-button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0.8;
+}
+
+.settings-close-button:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.settings-content {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.settings-section {
+  margin-bottom: 32px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section-header {
+  margin-bottom: 8px;
+}
+
+.settings-section-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-description {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.settings-section .api-key-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.settings-section .api-key-input {
+  width: 100%;
+  padding: 12px 48px 12px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  transition: all 0.2s ease;
+}
+
+.settings-section .api-key-input:focus {
+  outline: none;
+  border-color: var(--accent-violet);
+  box-shadow: 0 0 0 3px rgba(155, 81, 224, 0.1);
+}
+
+.settings-section .api-key-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.settings-section .api-key-submit-button {
+  position: absolute;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(155, 81, 224, 0.1);
+  border: none;
+  color: rgba(155, 81, 224, 0.4);
+  cursor: not-allowed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0.5;
+}
+
+.settings-section .api-key-submit-button.active {
+  background: var(--accent-violet);
+  color: white;
+  cursor: pointer;
+  opacity: 1;
+}
+
+.settings-section .api-key-submit-button.active:hover {
+  background: #8A47D1;
+  transform: scale(1.05);
+}
+
+.settings-section .api-key-submit-button:disabled {
+  cursor: not-allowed;
+}
+
+.settings-section .api-key-error {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--border-radius-sm);
+  color: #7F1D1D;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 /* Accessibility & Focus States */

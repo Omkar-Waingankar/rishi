@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { InputBoxProps, ImageMimeType, MessageContent, ContextState, ActiveTabResponse, PlotResponse } from './types';
 import ModelDropdown from './ModelDropdown';
+import { Send } from '@mui/icons-material';
 
 interface DropdownOption {
   value: string;
   label: string;
+  disabled?: boolean;
 }
 
 interface ImageAttachment {
@@ -15,9 +17,9 @@ interface ImageAttachment {
   bytes: number;
 }
 
-const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreaming, onStopStreaming, safeRoot, triggerStatusBarError }) => {
+const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreaming, onStopStreaming, safeRoot, triggerStatusBarError, apiKeyStatus }) => {
   const [message, setMessage] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<string>('claude-4-sonnet');
+  const [selectedModel, setSelectedModel] = useState<string>('');
   const [images, setImages] = useState<ImageAttachment[]>([]);
   const [imageError, setImageError] = useState<string | null>(null);
   const [hoveredImageId, setHoveredImageId] = useState<string | null>(null);
@@ -269,12 +271,29 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
 
   const handleModelChange = (value: string): void => {
     setSelectedModel(value);
-    localStorage.setItem('selectedModel', value);
   };
 
   const modelOptions: DropdownOption[] = [
-    { value: 'claude-4-sonnet', label: 'Claude 4 Sonnet' },
-    { value: 'claude-3.7-sonnet', label: 'Claude 3.7 Sonnet' }
+    { 
+      value: 'claude-4-sonnet', 
+      label: apiKeyStatus?.anthropic.has_key ? 'Claude 4 Sonnet' : 'Claude 4 Sonnet (missing API key)',
+      disabled: !apiKeyStatus?.anthropic.has_key
+    },
+    { 
+      value: 'claude-3.7-sonnet', 
+      label: apiKeyStatus?.anthropic.has_key ? 'Claude 3.7 Sonnet' : 'Claude 3.7 Sonnet (missing API key)',
+      disabled: !apiKeyStatus?.anthropic.has_key
+    },
+    { 
+      value: 'gpt-4o', 
+      label: apiKeyStatus?.openai.has_key ? 'GPT-4o' : 'GPT-4o (missing API key)',
+      disabled: !apiKeyStatus?.openai.has_key
+    },
+    { 
+      value: 'gpt-4o-mini', 
+      label: apiKeyStatus?.openai.has_key ? 'GPT-4o-mini' : 'GPT-4o-mini (missing API key)',
+      disabled: !apiKeyStatus?.openai.has_key
+    }
   ];
 
   // Handle context dropdown
@@ -329,13 +348,13 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
     };
   }, [showContextDropdown]);
 
-  // Load saved model preference on component mount
+  // Default to first available (non-disabled) model when API key status changes
   React.useEffect(() => {
-    const savedModel = localStorage.getItem('selectedModel');
-    if (savedModel) {
-      setSelectedModel(savedModel);
+    const firstAvailableModel = modelOptions.find(option => !option.disabled);
+    if (firstAvailableModel && firstAvailableModel.value !== selectedModel) {
+      setSelectedModel(firstAvailableModel.value);
     }
-  }, []);
+  }, [apiKeyStatus]);
 
   return (
     <div className="input-box">
@@ -522,9 +541,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
                   className="send-button stop-button"
                   aria-label="Stop streaming"
                 >
-                  <svg className="send-icon" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="6" y="6" width="12" height="12" rx="2"/>
-                  </svg>
+                  <Send className="send-icon" sx={{ fontSize: 12 }} />
                 </button>
               ) : (
                 <button
@@ -533,9 +550,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
                   className="send-button"
                   aria-label="Send message"
                 >
-                  <svg className="send-icon" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
-                  </svg>
+                  <Send className="send-icon" sx={{ fontSize: 12 }} />
                 </button>
               )}
             </div>

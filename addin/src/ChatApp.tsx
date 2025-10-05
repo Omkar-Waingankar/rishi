@@ -3,7 +3,9 @@ import MessageList from './MessageList';
 import InputBox from './InputBox';
 import StatusBar from './StatusBar';
 import ApiKeySetup from './ApiKeySetup';
+import Settings from './Settings';
 import { Message, ChatResponse, MessageContent } from './types';
+import { Settings as SettingsIcon } from '@mui/icons-material';
 import {
   ToolCommand,
   ToolCallStatus,
@@ -118,8 +120,15 @@ const ChatApp: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'failed'>('connecting');
 
   // API key state
-  const [apiKey, setApiKey] = useState<string | null>(null);
   const [showApiKeySetup, setShowApiKeySetup] = useState<boolean>(false);
+  const [selectedProvider, setSelectedProvider] = useState<string>('anthropic');
+  const [apiKeyStatus, setApiKeyStatus] = useState<{
+    anthropic: { has_key: boolean; api_key: string };
+    openai: { has_key: boolean; api_key: string };
+  } | null>(null);
+
+  // Settings state
+  const [showSettings, setShowSettings] = useState<boolean>(false);
 
   const checkSafeRoot = async () => {
     try {
@@ -148,31 +157,33 @@ const ChatApp: React.FC = () => {
     }
   };
 
-  // Check if API key exists on app startup
+  // Check API key status for both providers on app startup
   useEffect(() => {
-    const checkApiKey = async () => {
+    const checkApiKeys = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/key', {
+        const response = await fetch('http://localhost:8080/api/keys', {
           method: 'GET',
         });
 
         if (response.ok) {
           const data = await response.json();
-          if (!data.has_key || !data.api_key) {
+          setApiKeyStatus(data);
+          
+          // Check if we have any API keys
+          const hasAnyKey = data.anthropic.has_key || data.openai.has_key;
+          if (!hasAnyKey) {
             setShowApiKeySetup(true);
-          } else {
-            setApiKey(data.api_key);
           }
         } else {
           setShowApiKeySetup(true);
         }
       } catch (error) {
         // Backend server not ready yet, will retry
-        console.error('Error checking API key:', error);
+        console.error('Error checking API keys:', error);
       }
     };
 
-    checkApiKey();
+    checkApiKeys();
   }, []);
 
   // Check safe root on app startup
@@ -298,17 +309,30 @@ const ChatApp: React.FC = () => {
         }
       });
 
-      const response = await fetch('http://localhost:8080/chat', {
+      // Determine endpoint and headers based on model type
+      let endpoint: string;
+      let apiKey: string;
+      
+      if (selectedModel.substring(0, 6) === 'claude') {
+        endpoint = 'http://localhost:8080/chat/anthropic';
+        apiKey = apiKeyStatus?.anthropic.api_key || '';
+      } else {
+        endpoint = 'http://localhost:8080/chat/openai';
+        apiKey = apiKeyStatus?.openai.api_key || '';
+      }
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-Provider-API-Key': apiKey,
+        'X-Model': selectedModel,
+      };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Model': selectedModel,
-          'X-Anthropic-API-Key': apiKey || ''
-        },
+        headers,
         body: JSON.stringify({
-          content: content,
-          history: conversationHistory,
-          safe_root: safeRoot
+          message: content,
+          history: conversationHistory
         }),
         signal: abortControllerRef.current.signal
       });
@@ -455,7 +479,7 @@ const ChatApp: React.FC = () => {
 
   const handleApiKeySubmit = async (submittedApiKey: string): Promise<void> => {
     try {
-      const response = await fetch('http://localhost:8080/api/key', {
+      const response = await fetch(`http://localhost:8080/api/key/${selectedProvider}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -467,18 +491,88 @@ const ChatApp: React.FC = () => {
         throw new Error('Failed to save API key');
       }
 
-      setApiKey(submittedApiKey);
       setShowApiKeySetup(false);
+      
+      // Update API key status
+      if (apiKeyStatus) {
+        const updatedStatus = { ...apiKeyStatus };
+        updatedStatus[selectedProvider as keyof typeof updatedStatus] = {
+          has_key: true,
+          api_key: submittedApiKey
+        };
+        setApiKeyStatus(updatedStatus);
+      }
     } catch (error) {
       throw new Error('Failed to save API key. Please try again.');
+    }
+  };
+
+  const handleApiKeyUpdate = async (provider: string, apiKey: string): Promise<void> => {
+    try {
+      // First validate the API key
+      const validateResponse = await fetch(`http://localhost:8080/api/key/${provider}/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ api_key: apiKey }),
+      });
+
+      if (!validateResponse.ok) {
+        throw new Error('Invalid API key');
+      }
+
+      const validateData = await validateResponse.json();
+      if (!validateData.valid) {
+        throw new Error('Invalid API key');
+      }
+
+      // If validation passes, save the API key
+      const response = await fetch(`http://localhost:8080/api/key/${provider}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ api_key: apiKey }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save API key');
+      }
+
+      // Update API key status
+      if (apiKeyStatus) {
+        const updatedStatus = { ...apiKeyStatus };
+        updatedStatus[provider as keyof typeof updatedStatus] = {
+          has_key: true,
+          api_key: apiKey
+        };
+        setApiKeyStatus(updatedStatus);
+      }
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to save API key. Please try again.');
     }
   };
 
   if (showApiKeySetup) {
     return (
       <div className="chat-app">
-        <ApiKeySetup onApiKeySubmit={handleApiKeySubmit} />
+        <ApiKeySetup 
+          onApiKeySubmit={handleApiKeySubmit} 
+          selectedProvider={selectedProvider}
+          onProviderChange={setSelectedProvider}
+        />
       </div>
+    );
+  }
+
+  if (showSettings) {
+    return (
+      <Settings
+        onClose={() => setShowSettings(false)}
+        apiKeyStatus={apiKeyStatus}
+        onApiKeyUpdate={handleApiKeyUpdate}
+      />
     );
   }
 
@@ -486,17 +580,28 @@ const ChatApp: React.FC = () => {
     <div className="chat-app">
       <div className="chat-header">
         <h2>Rishi</h2>
+        <button 
+          className="settings-button"
+          onClick={() => setShowSettings(true)}
+          title="Settings"
+        >
+          <SettingsIcon sx={{ fontSize: 16 }} />
+        </button>
       </div>
       <StatusBar connectionStatus={connectionStatus} workingDirectory={safeRoot} triggerErrorRef={triggerStatusBarErrorRef} />
       <MessageList messages={messages} isLoading={isStreaming} />
-      <InputBox
-        onSendMessage={handleSendMessage}
-        disabled={isStreaming}
-        isStreaming={isStreaming}
-        onStopStreaming={handleStopStreaming}
-        safeRoot={safeRoot}
-        triggerStatusBarError={triggerStatusBarErrorRef}
-      />
+        <InputBox
+          onSendMessage={handleSendMessage}
+          disabled={isStreaming}
+          isStreaming={isStreaming}
+          onStopStreaming={handleStopStreaming}
+          safeRoot={safeRoot}
+          triggerStatusBarError={triggerStatusBarErrorRef}
+          apiKeyStatus={apiKeyStatus ? {
+            anthropic: { has_key: apiKeyStatus.anthropic.has_key },
+            openai: { has_key: apiKeyStatus.openai.has_key }
+          } : null}
+        />
     </div>
   );
 };

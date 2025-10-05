@@ -55,6 +55,10 @@ export interface InputBoxProps {
   onStopStreaming: () => void;
   safeRoot: string | null;
   triggerStatusBarError?: React.MutableRefObject<(() => void) | null>;
+  apiKeyStatus?: {
+    anthropic: { has_key: boolean };
+    openai: { has_key: boolean };
+  } | null;
 }
 
 export interface MessageListProps {

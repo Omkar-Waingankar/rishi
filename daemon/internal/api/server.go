@@ -21,13 +21,14 @@ func (s *ServerClient) Routes() http.Handler {
 	// Health check endpoint
 	r.Get("/health", s.handleHealth)
 
-	// Streaming chat endpoint (NDJSON)
-	r.Post("/chat", s.handleChat)
+	// Streaming chat endpoints (NDJSON)
+	r.Post("/chat/anthropic", s.handleAnthropicChat)
+	r.Post("/chat/openai", s.handleOpenAIChat)
 
 	// API key management endpoints
-	r.Get("/api/key", s.handleGetAPIKey)
-	r.Post("/api/key", s.handleSetAPIKey)
-	r.Post("/api/key/validate", s.handleValidateAPIKey)
+	r.Get("/api/keys", s.handleGetAllAPIKeys)
+	r.Post("/api/key/{provider}", s.handleSetAPIKey)
+	r.Post("/api/key/{provider}/validate", s.handleValidateAPIKey)
 
 	return r
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MessageListProps, Message } from './types';
+import { ContentCopy, ThumbUp, ThumbDown, Close } from '@mui/icons-material';
 
 const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -255,11 +256,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
                                 </svg>
                               )}
                               {item.toolCall?.status === 'failed' && (
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="error-icon">
-                                  <circle cx="12" cy="12" r="10"></circle>
-                                  <line x1="15" y1="9" x2="9" y2="15"></line>
-                                  <line x1="9" y1="9" x2="15" y2="15"></line>
-                                </svg>
+                                <Close className="error-icon" sx={{ fontSize: 14 }} />
                               )}
                             </div>
                           </div>
@@ -276,29 +273,20 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
                   onClick={() => copyToClipboard(buildCopyText(message.content))}
                   aria-label="Copy message"
                 >
-                  <svg className="action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
-                    <path d="m4 16c-1.1 0-2-.9-2-2v-10c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-                  </svg>
+                  <ContentCopy className="action-icon" sx={{ fontSize: 14 }} />
                   Copy
                 </button>
                 <button 
                   className="action-button thumb-button"
                   aria-label="Like message"
                 >
-                  <svg className="action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M7 10v12"/>
-                    <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/>
-                  </svg>
+                  <ThumbUp className="action-icon" sx={{ fontSize: 14 }} />
                 </button>
                 <button 
                   className="action-button thumb-button"
                   aria-label="Dislike message"
                 >
-                  <svg className="action-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M17 14V2"/>
-                    <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/>
-                  </svg>
+                  <ThumbDown className="action-icon" sx={{ fontSize: 14 }} />
                 </button>
               </div>
             )}
