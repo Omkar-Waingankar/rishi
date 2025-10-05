@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { InputBoxProps } from './types';
 import ModelDropdown from './ModelDropdown';
+import { Send } from '@mui/icons-material';
 
 interface DropdownOption {
   value: string;
@@ -116,9 +117,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
                 className="send-button stop-button"
                 aria-label="Stop streaming"
               >
-                <svg className="send-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="6" width="12" height="12" rx="2"/>
-                </svg>
+                <Send className="send-icon" sx={{ fontSize: 12 }} />
               </button>
             ) : (
               <button
@@ -127,9 +126,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
                 className="send-button"
                 aria-label="Send message"
               >
-                <svg className="send-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
-                </svg>
+                <Send className="send-icon" sx={{ fontSize: 12 }} />
               </button>
             )}
           </div>

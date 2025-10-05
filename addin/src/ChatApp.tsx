@@ -3,7 +3,9 @@ import MessageList from './MessageList';
 import InputBox from './InputBox';
 import StatusBar from './StatusBar';
 import ApiKeySetup from './ApiKeySetup';
+import Settings from './Settings';
 import { Message, ChatResponse } from './types';
+import { Settings as SettingsIcon } from '@mui/icons-material';
 import {
   ToolCommand,
   ToolCallStatus,
@@ -124,6 +126,9 @@ const ChatApp: React.FC = () => {
     anthropic: { has_key: boolean; api_key: string };
     openai: { has_key: boolean; api_key: string };
   } | null>(null);
+
+  // Settings state
+  const [showSettings, setShowSettings] = useState<boolean>(false);
 
   const checkSafeRoot = async () => {
     try {
@@ -500,6 +505,53 @@ const ChatApp: React.FC = () => {
     }
   };
 
+  const handleApiKeyUpdate = async (provider: string, apiKey: string): Promise<void> => {
+    try {
+      // First validate the API key
+      const validateResponse = await fetch(`http://localhost:8080/api/key/${provider}/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ api_key: apiKey }),
+      });
+
+      if (!validateResponse.ok) {
+        throw new Error('Invalid API key');
+      }
+
+      const validateData = await validateResponse.json();
+      if (!validateData.valid) {
+        throw new Error('Invalid API key');
+      }
+
+      // If validation passes, save the API key
+      const response = await fetch(`http://localhost:8080/api/key/${provider}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ api_key: apiKey }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save API key');
+      }
+
+      // Update API key status
+      if (apiKeyStatus) {
+        const updatedStatus = { ...apiKeyStatus };
+        updatedStatus[provider as keyof typeof updatedStatus] = {
+          has_key: true,
+          api_key: apiKey
+        };
+        setApiKeyStatus(updatedStatus);
+      }
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to save API key. Please try again.');
+    }
+  };
+
   if (showApiKeySetup) {
     return (
       <div className="chat-app">
@@ -512,10 +564,27 @@ const ChatApp: React.FC = () => {
     );
   }
 
+  if (showSettings) {
+    return (
+      <Settings
+        onClose={() => setShowSettings(false)}
+        apiKeyStatus={apiKeyStatus}
+        onApiKeyUpdate={handleApiKeyUpdate}
+      />
+    );
+  }
+
   return (
     <div className="chat-app">
       <div className="chat-header">
         <h2>Rishi</h2>
+        <button 
+          className="settings-button"
+          onClick={() => setShowSettings(true)}
+          title="Settings"
+        >
+          <SettingsIcon sx={{ fontSize: 16 }} />
+        </button>
       </div>
       <StatusBar connectionStatus={connectionStatus} workingDirectory={safeRoot} triggerErrorRef={triggerStatusBarErrorRef} />
       <MessageList messages={messages} isLoading={isStreaming} />

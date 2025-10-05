@@ -31,12 +31,6 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySubmit, selectedProvi
         return;
       }
 
-      // Check minimum length
-      if (trimmedKey.length < 20) {
-        setIsValid(false);
-        return;
-      }
-
       // Test with backend validation endpoint
       setIsValidating(true);
       try {

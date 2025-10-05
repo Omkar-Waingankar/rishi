@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Folder } from '@mui/icons-material';
 
 interface StatusBarProps {
   connectionStatus: 'connecting' | 'connected' | 'failed';
@@ -92,9 +93,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ connectionStatus, workingDirector
           {connectionStatus === 'connected' && workingDirectory && (
             <div className="status-bar-right">
               <span className="status-separator">|</span>
-              <svg className="folder-icon" width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M1.75 1A1.75 1.75 0 000 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0016 13.25v-8.5A1.75 1.75 0 0014.25 3H7.5a.25.25 0 01-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75z"/>
-              </svg>
+              <Folder className="folder-icon" sx={{ fontSize: 12 }} />
               <span
                 className="working-directory-text"
                 onMouseEnter={() => setShowTooltip(true)}
