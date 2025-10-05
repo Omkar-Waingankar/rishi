@@ -179,6 +179,28 @@ func formatMessageContentArrayForDebug(contents []inboundContent) string {
 	return fmt.Sprintf("[%s]", joinStrings(parts, ", "))
 }
 
+// convertToOpenaiContent converts a content array to a string for OpenAI
+func convertToOpenaiContent(contents []inboundContent) string {
+	var textContent string
+
+	for _, content := range contents {
+		switch content.Type {
+		case "text":
+			if content.Content != "" {
+				textContent += content.Content
+			}
+		case "image":
+			// For images, we can't easily convert to text, so we'll skip them for now
+			// OpenAI doesn't support image content blocks in the same way as Anthropic
+			log.Warn().Msgf("Skipping image content in OpenAI message conversion")
+		default:
+			log.Warn().Msgf("Unknown content type in OpenAI message conversion: %s", content.Type)
+		}
+	}
+
+	return textContent
+}
+
 // joinStrings is a simple helper to join strings with a separator
 func joinStrings(strs []string, sep string) string {
 	if len(strs) == 0 {
