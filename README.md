@@ -9,6 +9,10 @@
 
 Works seamlessly as a RStudio Addin.
 
+## Demo
+
+https://v8smvj8yqcz9aedn.public.blob.vercel-storage.com/rishi_demo.mp4
+
 <table>
   <tr>
     <td width="30%" valign="top"><b>What is Rishi?</b></td>
