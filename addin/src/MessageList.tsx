@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MessageListProps, Message } from './types';
-import { ContentCopy, ThumbUp, ThumbDown, Close } from '@mui/icons-material';
+import { ContentCopy, ThumbUp, ThumbDown, Close, Edit, Add, Terminal } from '@mui/icons-material';
 import { RHelpToolInput } from './tool_types';
 
 const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
@@ -16,6 +16,22 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
       return `${input.package}::${input.topic}`;
     }
     return input.package;
+  };
+
+  // Helper function to get the appropriate icon for each tool type
+  const getToolIcon = (toolName: string) => {
+    switch (toolName) {
+      case 'str_replace':
+        return <Edit sx={{ fontSize: 14 }} />;
+      case 'create':
+        return <Add sx={{ fontSize: 14 }} />;
+      case 'insert':
+        return <Edit sx={{ fontSize: 14 }} />;
+      case 'console_exec':
+        return <Terminal sx={{ fontSize: 14 }} />;
+      default:
+        return null;
+    }
   };
 
 
@@ -268,6 +284,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
                           )
                         ) : (
                           <div key={index} className={`tool-call-box ${item.toolCall?.status}`}>
+                            <div className="tool-call-icon">
+                              {getToolIcon(item.toolCall?.name || '')}
+                            </div>
                             <span className="tool-call-text">{item.content}</span>
                             <div className="tool-call-icon">
                               {item.toolCall?.status === 'requesting' && (

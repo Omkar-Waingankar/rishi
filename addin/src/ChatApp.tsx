@@ -40,11 +40,11 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
       const displayPath = replaceInput.path || 'file';
 
       if (toolCall.status === 'requesting') {
-        return `Editing ${displayPath}`;
+        return displayPath;
       } else if (toolCall.status === 'failed') {
         return `Failed to edit ${displayPath}`;
       } else {
-        return `Edited ${displayPath}`;
+        return displayPath;
       }
     }
     
@@ -53,11 +53,11 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
       const displayPath = createInput.path || 'file';
 
       if (toolCall.status === 'requesting') {
-        return `Creating ${displayPath}`;
+        return displayPath;
       } else if (toolCall.status === 'failed') {
         return `Failed to create ${displayPath}`;
       } else {
-        return `Created ${displayPath}`;
+        return displayPath;
       }
     }
     
@@ -66,21 +66,21 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
       const displayPath = insertInput.path || 'file';
 
       if (toolCall.status === 'requesting') {
-        return `Inserting into ${displayPath}`;
+        return displayPath;
       } else if (toolCall.status === 'failed') {
         return `Failed to insert into ${displayPath}`;
       } else {
-        return `Inserted into ${displayPath}`;
+        return displayPath;
       }
     }
 
     case ToolCommand.CONSOLE_EXEC: {
       if (toolCall.status === 'requesting') {
-        return `Writing to console`;
+        return 'R console';
       } else if (toolCall.status === 'failed') {
         return `Failed to write to console`;
       } else {
-        return `Wrote to console`;
+        return 'R console';
       }
     }
 
