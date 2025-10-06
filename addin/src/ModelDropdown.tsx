@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 interface DropdownOption {
   value: string;
   label: string;
+  disabled?: boolean;
 }
 
 interface ModelDropdownProps {
