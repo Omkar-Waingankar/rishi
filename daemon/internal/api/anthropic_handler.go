@@ -104,8 +104,11 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 			model = anthropic.ModelClaude3_7SonnetLatest
 			log.Info().Msgf("Using Claude 3.7 Sonnet model")
 		case "claude-4-sonnet":
-			model = anthropic.ModelClaudeSonnet4_20250514
+			model = anthropic.ModelClaudeSonnet4_0
 			log.Info().Msgf("Using Claude 4 Sonnet model")
+		case "claude-4.5-sonnet":
+			model = anthropic.ModelClaudeSonnet4_5
+			log.Info().Msgf("Using Claude 4.5 Sonnet model")
 		default:
 			// If unknown model, log and use default
 			log.Warn().Msgf("Unknown model requested: %s, using default Claude 4 Sonnet", selectedModel)

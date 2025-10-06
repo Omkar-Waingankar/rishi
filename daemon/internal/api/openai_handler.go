@@ -114,6 +114,9 @@ func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) 
 		case "gpt-4o-mini":
 			model = openai.GPT4oMini
 			log.Info().Msgf("Using GPT-4o-mini model")
+		case "gpt-5":
+			model = openai.GPT5
+			log.Info().Msgf("Using GPT-5 model")
 		default:
 			log.Warn().Msgf("Unknown model requested: %s, using default GPT-4o", selectedModel)
 		}
@@ -267,12 +270,12 @@ func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) 
 	for {
 		// Create streaming request
 		req := openai.ChatCompletionRequest{
-			Model:       model,
-			Messages:    messages,
-			MaxTokens:   maxTokens,
-			Temperature: 0.1,
-			Stream:      true,
-			Tools:       tools,
+			Model:               model,
+			Messages:            messages,
+			MaxCompletionTokens: maxTokens,
+			Temperature:         0.1,
+			Stream:              true,
+			Tools:               tools,
 		}
 
 		stream, err := client.CreateChatCompletionStream(r.Context(), req)
