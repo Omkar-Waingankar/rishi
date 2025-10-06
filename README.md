@@ -23,7 +23,7 @@ Works seamlessly as a RStudio Addin. Watch the demo video [here](https://tryrish
   </tr>
   <tr>
     <td width="30%" valign="top"><b>What models are supported?</b></td>
-    <td width="70%" valign="top">Currently, Claude (3.7, 4, and 4.5) and GPT (4o, 4o mini, and 5). Expanding support to other frontier and open-source models is on the roadmap.</td>
+    <td width="70%" valign="top">Currently, Claude (Sonnet 3.7, 4, and 4.5) and GPT (4o, 4o mini, and 5). Expanding support to other frontier and open-source models is on the roadmap.</td>
   </tr>
   <tr>
     <td width="30%" valign="top"><b>How private is Rishi?</b></td>
