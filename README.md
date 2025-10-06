@@ -7,11 +7,7 @@
 - **Privacy-first:** runs locally, your messages/code/data stay on your machine
 - **Transparent:** fully open-source and auditable, control your own API keys
 
-Works seamlessly as a RStudio Addin.
-
-## Demo
-
-Watch demo video here -> https://v8smvj8yqcz9aedn.public.blob.vercel-storage.com/rishi_demo.mp4
+Works seamlessly as a RStudio Addin. Watch the demo video at tryrishi.com.
 
 <table>
   <tr>
