@@ -464,6 +464,7 @@ r_help_endpoint <- function(req, res) {
   }
 
   package <- body$package
+  topic <- if (is.null(body$topic)) NULL else body$topic
 
   tryCatch({
     # Check if package is installed, and install it if not
@@ -496,17 +497,39 @@ r_help_endpoint <- function(req, res) {
       return(r_help_tool_result(error = paste0("Package '", package, "' not found")))
     }
 
-    # Get package description
-    desc <- utils::packageDescription(package)
-    if (is.null(desc)) {
-      return(r_help_tool_result(error = paste0("No description found for package '", package, "'")))
-    }
-
     # Get help database for the package
     help_db <- tools::Rd_db(package)
 
     if (is.null(help_db) || length(help_db) == 0) {
       return(r_help_tool_result(error = paste0("No help database found for package '", package, "'")))
+    }
+
+    # If topic is provided, return topic-specific help
+    if (!is.null(topic) && nzchar(topic)) {
+      # Check if topic exists in help database
+      if (!topic %in% names(help_db)) {
+        available_topics <- paste(head(names(help_db), 10), collapse = ", ")
+        return(r_help_tool_result(error = paste0(
+          "Topic '", topic, "' not found in package '", package, "'. ",
+          "Available topics include: ", available_topics,
+          if (length(names(help_db)) > 10) ", ..." else ""
+        )))
+      }
+
+      # Get the Rd object for the topic
+      rd <- help_db[[topic]]
+
+      # Convert Rd to text
+      topic_help <- paste(capture.output(tools::Rd2txt(rd)), collapse = "\n")
+
+      return(r_help_tool_result(content = topic_help))
+    }
+
+    # Otherwise, return package-level help
+    # Get package description
+    desc <- utils::packageDescription(package)
+    if (is.null(desc)) {
+      return(r_help_tool_result(error = paste0("No description found for package '", package, "'")))
     }
 
     # Extract function names and titles

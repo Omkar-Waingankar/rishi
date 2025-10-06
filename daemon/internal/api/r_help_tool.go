@@ -7,7 +7,8 @@ import (
 )
 
 type rHelpInput struct {
-	Package string `json:"package"`
+	Package string  `json:"package"`
+	Topic   *string `json:"topic,omitempty"`
 }
 
 type rHelpOutput struct {

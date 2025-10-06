@@ -138,7 +138,7 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 	// Add R help tool
 	rHelpTool := anthropic.ToolParam{
 		Name:        "r_help",
-		Description: anthropic.String("Retrieves R package documentation by calling help(package=\"<package>\"). Use this to look up package-level documentation when writing R code or answering questions about R packages and their functionality.\n\nParameters:\n- package (required): The name of the R package to get documentation for (e.g., 'dplyr', 'ggplot2', 'base')."),
+		Description: anthropic.String("Retrieves R package documentation. Use this to look up package-level documentation or specific function/topic documentation when writing R code or answering questions about R packages and their functionality.\n\nParameters:\n- package (required): The name of the R package to get documentation for (e.g., 'dplyr', 'ggplot2', 'rstudioapi').\n- topic (optional): The specific function, method, or topic within the package to get detailed documentation for (e.g., 'addTheme', 'mutate').\n\nExamples:\n- Package-level help: {\"package\": \"ggplot2\"}\n- Topic-specific help: {\"package\": \"rstudioapi\", \"topic\": \"addTheme\"} - equivalent to help(\"addTheme\", package=\"rstudioapi\")"),
 		InputSchema: GenerateSchema[rHelpInput](),
 	}
 
