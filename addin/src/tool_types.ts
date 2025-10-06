@@ -6,6 +6,7 @@ export enum ToolCommand {
   CREATE = 'create',
   INSERT = 'insert',
   CONSOLE_EXEC = 'console_exec',
+  R_HELP = 'r_help',
 }
 
 export type ToolCallStatus = 'requesting' | 'completed' | 'failed';
@@ -37,6 +38,10 @@ export interface ConsoleExecToolInput {
   code: string;
 }
 
+export interface RHelpToolInput {
+  package: string;
+}
+
 // Output types for different tool commands
 export interface ViewToolOutput {
   content?: string;
@@ -47,6 +52,6 @@ export interface ViewToolOutput {
 export interface ToolCall {
   name: ToolCommand;
   status: ToolCallStatus;
-  input?: ViewToolInput | StrReplaceToolInput | CreateToolInput | InsertToolInput | ConsoleExecToolInput;
+  input?: ViewToolInput | StrReplaceToolInput | CreateToolInput | InsertToolInput | ConsoleExecToolInput | RHelpToolInput;
   result?: string;
 }

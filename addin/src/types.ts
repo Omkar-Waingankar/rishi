@@ -27,7 +27,7 @@ interface ToolCallContent {
     name: string;
     status: ToolCallStatus;
     input?: object;
-    result?: string;
+    result?: any;
   };
 }
 
@@ -72,7 +72,7 @@ export interface ChatResponse {
     name: string;
     input: object;
     status: ToolCallStatus;
-    result?: string;
+    result?: any;
   };
   is_final?: boolean;
   error?: string;

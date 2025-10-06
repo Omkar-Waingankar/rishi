@@ -453,6 +453,105 @@ console_exec_endpoint <- function(req, res) {
   })
 }
 
+#' R help endpoint
+#' @post /r_help
+r_help_endpoint <- function(req, res) {
+  body <- jsonlite::fromJSON(req$postBody)
+
+  # Check if package is missing
+  if (is.null(body$package) || body$package == "") {
+    return(r_help_tool_result(error = "Package is required"))
+  }
+
+  package <- body$package
+
+  tryCatch({
+    # Check if package is installed, and install it if not
+    if (!requireNamespace(package, quietly = TRUE)) {
+      # Try to install the package
+      tryCatch({
+        # Capture install output for debugging
+        install_output <- capture.output({
+          install.packages(package, repos = "https://cloud.r-project.org", quiet = FALSE)
+        }, type = "message")
+
+        # Check if installation succeeded
+        if (!requireNamespace(package, quietly = TRUE)) {
+          # Get more details about why it failed
+          lib_paths <- .libPaths()
+          return(r_help_tool_result(error = paste0(
+            "Failed to install package '", package, "'. ",
+            "Library paths: ", paste(lib_paths, collapse = ", "), ". ",
+            "Install output: ", paste(tail(install_output, 5), collapse = " ")
+          )))
+        }
+      }, error = function(install_error) {
+        return(r_help_tool_result(error = paste0("Failed to install package '", package, "': ", install_error$message)))
+      })
+    }
+
+    # Get package path
+    pkg_path <- find.package(package, quiet = TRUE)
+    if (length(pkg_path) == 0) {
+      return(r_help_tool_result(error = paste0("Package '", package, "' not found")))
+    }
+
+    # Get package description
+    desc <- utils::packageDescription(package)
+    if (is.null(desc)) {
+      return(r_help_tool_result(error = paste0("No description found for package '", package, "'")))
+    }
+
+    # Get help database for the package
+    help_db <- tools::Rd_db(package)
+
+    if (is.null(help_db) || length(help_db) == 0) {
+      return(r_help_tool_result(error = paste0("No help database found for package '", package, "'")))
+    }
+
+    # Extract function names and titles
+    help_entries <- lapply(names(help_db), function(topic) {
+      rd <- help_db[[topic]]
+      # Extract title from Rd object
+      title_tag <- rd[sapply(rd, function(x) attr(x, "Rd_tag") == "\\title")]
+      if (length(title_tag) > 0) {
+        title <- paste(unlist(title_tag[[1]]), collapse = " ")
+        # Clean up the title
+        title <- gsub("\\s+", " ", title)
+        title <- trimws(title)
+      } else {
+        title <- ""
+      }
+      list(topic = topic, title = title)
+    })
+
+    # Build the help content
+    help_content <- paste0(
+      "Package: ", package, "\n",
+      "Title: ", desc$Title, "\n",
+      "Version: ", desc$Version, "\n\n",
+      "Description:\n",
+      desc$Description, "\n\n",
+      "Available Functions:\n\n"
+    )
+
+    # Add each function with its description
+    for (entry in help_entries) {
+      help_content <- paste0(
+        help_content,
+        entry$topic,
+        if (nzchar(entry$title)) paste0(" - ", entry$title) else "",
+        "\n"
+      )
+    }
+
+    return(r_help_tool_result(content = help_content))
+
+  }, error = function(e) {
+    return(r_help_tool_result(error = paste("Failed to retrieve help:", e$message)))
+  })
+}
+
 #' Start Tool RPC Server
 #'
 #' Starts a plumber server on port 8082 for tool operations
@@ -473,6 +572,7 @@ startToolRPC <- function() {
     plumber::pr_post("/text_editor/create", text_editor_create_endpoint) %>%
     plumber::pr_post("/text_editor/insert", text_editor_insert_endpoint) %>%
     plumber::pr_post("/console/exec", console_exec_endpoint) %>%
+    plumber::pr_post("/r_help", r_help_endpoint) %>%
     plumber::pr_set_serializer(plumber::serializer_unboxed_json())
 
   # Start server
