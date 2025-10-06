@@ -274,24 +274,24 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
   };
 
   const modelOptions: DropdownOption[] = [
-    { 
-      value: 'claude-4-sonnet', 
-      label: apiKeyStatus?.anthropic.has_key ? 'Claude 4 Sonnet' : 'Claude 4 Sonnet (missing API key)',
+    {
+      value: 'claude-4-sonnet',
+      label: 'claude-4-sonnet',
       disabled: !apiKeyStatus?.anthropic.has_key
     },
-    { 
-      value: 'claude-3.7-sonnet', 
-      label: apiKeyStatus?.anthropic.has_key ? 'Claude 3.7 Sonnet' : 'Claude 3.7 Sonnet (missing API key)',
+    {
+      value: 'claude-3.7-sonnet',
+      label: 'claude-3.7-sonnet',
       disabled: !apiKeyStatus?.anthropic.has_key
     },
-    { 
-      value: 'gpt-4o', 
-      label: apiKeyStatus?.openai.has_key ? 'GPT-4o' : 'GPT-4o (missing API key)',
+    {
+      value: 'gpt-4o',
+      label: 'gpt-4o',
       disabled: !apiKeyStatus?.openai.has_key
     },
-    { 
-      value: 'gpt-4o-mini', 
-      label: apiKeyStatus?.openai.has_key ? 'GPT-4o-mini' : 'GPT-4o-mini (missing API key)',
+    {
+      value: 'gpt-4o-mini',
+      label: 'gpt-4o-mini',
       disabled: !apiKeyStatus?.openai.has_key
     }
   ];
