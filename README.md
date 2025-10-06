@@ -11,7 +11,7 @@ Works seamlessly as a RStudio Addin.
 
 ## Demo
 
-<video src="https://v8smvj8yqcz9aedn.public.blob.vercel-storage.com/rishi_demo.mp4"></video>
+<video src="https://github.com/user-attachments/assets/04a8466e-27d8-4189-b305-e7cecb6881ee"></video>
 
 <table>
   <tr>
