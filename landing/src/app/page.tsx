@@ -110,13 +110,13 @@ export default function Home() {
             </code>
           </div>
           <p className="mb-4">
-            You'll need to provide your own Anthropic API key to get started. If you don't have one already, you can get one from the <a href="https://console.anthropic.com/api-keys" className="text-blue-600 hover:text-blue-800 underline">Anthropic Console</a>.
+            You'll need to provide your own Anthropic or OpenAI API key to get started. If you don't have one already, you can get one from the <a href="https://console.anthropic.com/api-keys" className="text-blue-600 hover:text-blue-800 underline">Anthropic Console</a> or <a href="https://platform.openai.com/api-keys" className="text-blue-600 hover:text-blue-800 underline">OpenAI Console</a>.
           </p>
 
           {/* What models are supported? */}
           <h2 className="text-base font-semibold mt-8 mb-4">What models are supported?</h2>
           <p className="mb-4">
-            Currently, Claude Sonnet 3.7 and Claude Sonnet 4. Expanding support to other frontier and open-source models is on the roadmap.
+            Currently, Claude Sonnet (4.5, 4, 3.7) and GPT (5, 4o, 4o mini). Expanding support to other frontier and open-source models is on the roadmap.
           </p>
 
           {/* How is this different from ChatGPT? */}
