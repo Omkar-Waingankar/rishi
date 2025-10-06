@@ -40,6 +40,7 @@ export interface ConsoleExecToolInput {
 
 export interface RHelpToolInput {
   package: string;
+  topic?: string;
 }
 
 // Output types for different tool commands

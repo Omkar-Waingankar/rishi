@@ -3,11 +3,20 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MessageListProps, Message } from './types';
 import { ContentCopy, ThumbUp, ThumbDown, Close } from '@mui/icons-material';
+import { RHelpToolInput } from './tool_types';
 
 const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const [expandedErrors, setExpandedErrors] = useState<Set<string>>(new Set());
+
+  // Helper function to generate tooltip text for R help tool calls
+  const getRHelpTooltipText = (input: RHelpToolInput): string => {
+    if (input.topic) {
+      return `${input.package}::${input.topic}`;
+    }
+    return input.package;
+  };
 
 
   const scrollToBottom = () => {
@@ -235,14 +244,28 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
                           {item.content}
                         </ReactMarkdown>
                       ) : (
-                        // Use legacy styling for view commands, new box styling for edit commands
-                        item.toolCall?.name === 'view' ? (
-                          <div key={index} className={`inline-tool-call ${item.toolCall?.status}`}>
-                            {item.content}
-                            {item.toolCall?.status === 'failed' && (
-                              <span className="tool-call-error-indicator" aria-label="Failed">×</span>
-                            )}
-                          </div>
+                        // Use legacy styling for view and r_help commands, new box styling for edit commands
+                        (item.toolCall?.name === 'view' || item.toolCall?.name === 'r_help') ? (
+                          item.toolCall?.name === 'r_help' && item.toolCall?.input ? (
+                            <div key={index} className="tooltip-container">
+                              <div className={`inline-tool-call ${item.toolCall?.status}`}>
+                                {item.content}
+                                {item.toolCall?.status === 'failed' && (
+                                  <span className="tool-call-error-indicator" aria-label="Failed">×</span>
+                                )}
+                              </div>
+                              <div className="tooltip">
+                                {getRHelpTooltipText(item.toolCall.input as RHelpToolInput)}
+                              </div>
+                            </div>
+                          ) : (
+                            <div key={index} className={`inline-tool-call ${item.toolCall?.status}`}>
+                              {item.content}
+                              {item.toolCall?.status === 'failed' && (
+                                <span className="tool-call-error-indicator" aria-label="Failed">×</span>
+                              )}
+                            </div>
+                          )
                         ) : (
                           <div key={index} className={`tool-call-box ${item.toolCall?.status}`}>
                             <span className="tool-call-text">{item.content}</span>

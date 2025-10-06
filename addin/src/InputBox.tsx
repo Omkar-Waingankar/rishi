@@ -280,6 +280,11 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
       disabled: !apiKeyStatus?.anthropic.has_key
     },
     {
+      value: 'claude-4.5-sonnet',
+      label: 'claude-4.5-sonnet',
+      disabled: !apiKeyStatus?.anthropic.has_key
+    },
+    {
       value: 'claude-3.7-sonnet',
       label: 'claude-3.7-sonnet',
       disabled: !apiKeyStatus?.anthropic.has_key
@@ -290,10 +295,15 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
       disabled: !apiKeyStatus?.openai.has_key
     },
     {
+      value: 'gpt-5',
+      label: 'gpt-5',
+      disabled: !apiKeyStatus?.openai.has_key
+    },
+    {
       value: 'gpt-4o-mini',
       label: 'gpt-4o-mini',
       disabled: !apiKeyStatus?.openai.has_key
-    }
+    },
   ];
 
   // Handle context dropdown
