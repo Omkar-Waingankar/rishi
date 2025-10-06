@@ -829,6 +829,7 @@
 .custom-dropdown {
   position: relative;
   z-index: 100;
+  min-width: 140px;
 }
 
 .dropdown-trigger {
@@ -918,6 +919,16 @@
 
 .dropdown-option:last-child {
   border-radius: 0 0 8px 8px;
+}
+
+.dropdown-option.disabled {
+  color: var(--text-tertiary);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dropdown-option.disabled:hover {
+  background: none;
 }
 
 .input-text-section textarea {
