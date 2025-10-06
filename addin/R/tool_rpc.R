@@ -506,9 +506,21 @@ r_help_endpoint <- function(req, res) {
 
     # If topic is provided, return topic-specific help
     if (!is.null(topic) && nzchar(topic)) {
+      # Help database keys include .Rd extension, but users don't provide it
+      # Try both with and without .Rd extension
+      topic_key <- if (topic %in% names(help_db)) {
+        topic
+      } else if (paste0(topic, ".Rd") %in% names(help_db)) {
+        paste0(topic, ".Rd")
+      } else {
+        NULL
+      }
+
       # Check if topic exists in help database
-      if (!topic %in% names(help_db)) {
-        available_topics <- paste(head(names(help_db), 10), collapse = ", ")
+      if (is.null(topic_key)) {
+        # Strip .Rd from available topics for cleaner error message
+        available_topics <- gsub("\\.Rd$", "", head(names(help_db), 10))
+        available_topics <- paste(available_topics, collapse = ", ")
         return(r_help_tool_result(error = paste0(
           "Topic '", topic, "' not found in package '", package, "'. ",
           "Available topics include: ", available_topics,
@@ -517,7 +529,7 @@ r_help_endpoint <- function(req, res) {
       }
 
       # Get the Rd object for the topic
-      rd <- help_db[[topic]]
+      rd <- help_db[[topic_key]]
 
       # Convert Rd to text
       topic_help <- paste(capture.output(tools::Rd2txt(rd)), collapse = "\n")
