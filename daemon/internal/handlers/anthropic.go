@@ -1,10 +1,12 @@
-package api
+package handlers
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
+	rishiTools "github.com/Omkar-Waingankar/rishi/daemon/internal/tools"
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/rs/zerolog/log"
@@ -12,7 +14,7 @@ import (
 
 // handleAnthropicChat proxies a streaming request with history to Anthropic and emits NDJSON lines
 // of the form {"text": "..."} and a final {"is_final": true}.
-func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Request) {
+func HandleAnthropicChat(w http.ResponseWriter, r *http.Request) {
 	if !validateChatRequest(w, r) {
 		return
 	}
@@ -133,7 +135,7 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 	consoleExecTool := anthropic.ToolParam{
 		Name:        "console_exec",
 		Description: anthropic.String("Executes R code in the user's R console. The code will be sent to the console and executed immediately."),
-		InputSchema: GenerateSchema[consoleExecInput](),
+		InputSchema: GenerateSchema[rishiTools.ConsoleExecInput](),
 	}
 
 	tools = append(tools, anthropic.ToolUnionParam{OfTool: &consoleExecTool})
@@ -142,7 +144,7 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 	rHelpTool := anthropic.ToolParam{
 		Name:        "r_help",
 		Description: anthropic.String("Retrieves R package documentation. Use this to look up package-level documentation or specific function/topic documentation when writing R code or answering questions about R packages and their functionality.\n\nParameters:\n- package (required): The name of the R package to get documentation for (e.g., 'dplyr', 'ggplot2', 'rstudioapi').\n- topic (optional): The specific function, method, or topic within the package to get detailed documentation for (e.g., 'addTheme', 'mutate').\n\nExamples:\n- Package-level help: {\"package\": \"ggplot2\"}\n- Topic-specific help: {\"package\": \"rstudioapi\", \"topic\": \"addTheme\"} - equivalent to help(\"addTheme\", package=\"rstudioapi\")"),
-		InputSchema: GenerateSchema[rHelpInput](),
+		InputSchema: GenerateSchema[rishiTools.RHelpInput](),
 	}
 
 	tools = append(tools, anthropic.ToolUnionParam{OfTool: &rHelpTool})
@@ -195,39 +197,39 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 				var response interface{}
 				switch block.Name {
 				case "r_help":
-					var input rHelpInput
+					var input rishiTools.RHelpInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
 						errMsg := fmt.Sprintf("Failed to parse r_help input: %s, error: %v", variant.JSON.Input.Raw(), err)
 						log.Error().Err(err).Msgf(errMsg)
-						response = rHelpOutput{
+						response = rishiTools.RHelpOutput{
 							Error: errMsg,
 						}
 						break
 					}
 
 					streamToolCallStart(w, flusher, "r_help", input)
-					response = rHelp(input)
+					response = rishiTools.RHelp(input)
 
 				case "console_exec":
-					var input consoleExecInput
+					var input rishiTools.ConsoleExecInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
 						errMsg := fmt.Sprintf("Failed to parse console exec input: %s, error: %v", variant.JSON.Input.Raw(), err)
 						log.Error().Err(err).Msgf(errMsg)
-						response = consoleExecOutput{
+						response = rishiTools.ConsoleExecOutput{
 							Error: errMsg,
 						}
 						break
 					}
 
 					streamToolCallStart(w, flusher, "console_exec", input)
-					response = consoleExec(input)
+					response = rishiTools.ConsoleExec(input)
 
 				case "str_replace_based_edit_tool":
-					var input textEditorInput
+					var input rishiTools.TextEditorInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
 						errMsg := fmt.Sprintf("Failed to parse text editor input: %s, error: %v", variant.JSON.Input.Raw(), err)
 						log.Error().Err(err).Msgf(errMsg)
-						response = textEditorViewOutput{
+						response = rishiTools.TextEditorViewOutput{
 							Error: errMsg,
 						}
 						break
@@ -237,48 +239,48 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 					if input.Command == "" {
 						errMsg := "Error: Missing required 'command' field. The text editor tool requires a 'command' parameter. Available commands: 'view' (to read files/directories). Example: {\"command\": \"view\", \"path\": \"filename.txt\"}"
 						log.Error().Msg(errMsg)
-						response = textEditorViewOutput{
+						response = rishiTools.TextEditorViewOutput{
 							Error: errMsg,
 						}
 						break
 					}
 
 					switch input.Command {
-					case ViewCommand:
-						viewInput := textEditorViewInput{
+					case rishiTools.ViewCommand:
+						viewInput := rishiTools.TextEditorViewInput{
 							Path:      input.Path,
 							ViewRange: input.ViewRange,
 						}
 						streamToolCallStart(w, flusher, string(input.Command), viewInput)
-						response = textEditorView(viewInput)
-					case StrReplaceCommand:
-						strReplaceInput := textEditorStrReplaceInput{
+						response = rishiTools.TextEditorView(viewInput)
+					case rishiTools.StrReplaceCommand:
+						strReplaceInput := rishiTools.TextEditorStrReplaceInput{
 							Path:   input.Path,
 							OldStr: input.OldStr,
 							NewStr: input.NewStr,
 						}
 						streamToolCallStart(w, flusher, string(input.Command), strReplaceInput)
-						response = textEditorStrReplace(strReplaceInput)
-					case CreateCommand:
-						createInput := textEditorCreateInput{
+						response = rishiTools.TextEditorStrReplace(strReplaceInput)
+					case rishiTools.CreateCommand:
+						createInput := rishiTools.TextEditorCreateInput{
 							Path:     input.Path,
 							FileText: input.FileText,
 						}
 						streamToolCallStart(w, flusher, string(input.Command), createInput)
-						response = textEditorCreate(createInput)
-					case InsertCommand:
+						response = rishiTools.TextEditorCreate(createInput)
+					case rishiTools.InsertCommand:
 						// Handle both field names - docs say new_str but API sends insert_text
 						insertText := input.NewStr
 						if insertText == "" {
 							insertText = input.InsertText
 						}
-						insertInput := textEditorInsertInput{
+						insertInput := rishiTools.TextEditorInsertInput{
 							Path:       input.Path,
 							InsertLine: input.InsertLine,
 							NewStr:     insertText,
 						}
 						streamToolCallStart(w, flusher, string(input.Command), insertInput)
-						response = textEditorInsert(insertInput)
+						response = rishiTools.TextEditorInsert(insertInput)
 					}
 				}
 
@@ -295,21 +297,21 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 				// Stream tool call completion event to frontend
 				switch block.Name {
 				case "r_help":
-					var input rHelpInput
+					var input rishiTools.RHelpInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
 						log.Error().Err(err).Msgf("Failed to parse r_help input for completion event")
 					}
 
 					isError = streamToolCallComplete(w, flusher, "r_help", input, response)
 				case "console_exec":
-					var input consoleExecInput
+					var input rishiTools.ConsoleExecInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
 						log.Error().Err(err).Msgf("Failed to parse console exec input for completion event")
 					}
 
 					isError = streamToolCallComplete(w, flusher, "console_exec", input, response)
 				case "str_replace_based_edit_tool":
-					var input textEditorInput
+					var input rishiTools.TextEditorInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
 						errMsg := fmt.Sprintf("Failed to parse text editor input: %s, error: %v", variant.JSON.Input.Raw(), err)
 						log.Error().Err(err).Msgf(errMsg)
@@ -317,14 +319,14 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 
 					var commandName string
 					switch response.(type) {
-					case textEditorViewOutput:
-						commandName = string(ViewCommand)
-					case textEditorStrReplaceOutput:
-						commandName = string(StrReplaceCommand)
-					case textEditorCreateOutput:
-						commandName = string(CreateCommand)
-					case textEditorInsertOutput:
-						commandName = string(InsertCommand)
+					case rishiTools.TextEditorViewOutput:
+						commandName = string(rishiTools.ViewCommand)
+					case rishiTools.TextEditorStrReplaceOutput:
+						commandName = string(rishiTools.StrReplaceCommand)
+					case rishiTools.TextEditorCreateOutput:
+						commandName = string(rishiTools.CreateCommand)
+					case rishiTools.TextEditorInsertOutput:
+						commandName = string(rishiTools.InsertCommand)
 					}
 
 					isError = streamToolCallComplete(w, flusher, commandName, input, response)
@@ -351,5 +353,37 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 			break
 		}
 	}
+}
 
+// parseAnthropicError converts Anthropic API errors into user-friendly messages
+func parseAnthropicError(err error) string {
+	errorMsg := err.Error()
+	if strings.Contains(errorMsg, "overloaded_error") || strings.Contains(errorMsg, "Overloaded") {
+		return "Claude is currently experiencing high demand. Please try again in a few moments."
+	}
+	return fmt.Sprintf("Claude encountered an error: %v", err)
+}
+
+// convertToAnthropicContent converts inbound content to Anthropic content blocks
+func convertToAnthropicContent(contents []inboundContent) ([]anthropic.ContentBlockParamUnion, error) {
+	var blocks []anthropic.ContentBlockParamUnion
+
+	for _, content := range contents {
+		switch content.Type {
+		case "text":
+			if content.Content != "" {
+				blocks = append(blocks, anthropic.NewTextBlock(content.Content))
+			}
+		case "image":
+			if err := validateImageContent(content); err != nil {
+				return nil, fmt.Errorf("invalid image content: %v", err)
+			}
+
+			blocks = append(blocks, anthropic.NewImageBlockBase64(content.MediaType, content.DataBase64))
+		default:
+			log.Warn().Msgf("Unknown content type: %s", content.Type)
+		}
+	}
+
+	return blocks, nil
 }

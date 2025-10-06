@@ -1,13 +1,23 @@
-package api
+package handlers
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
 const (
 	defaultMaxTokens = 8192
 )
+
+// inboundContent defines content types for inbound messages
+type inboundContent struct {
+	Type       string `json:"type"`                 // "text" | "image"
+	Content    string `json:"content,omitempty"`    // for text content
+	MediaType  string `json:"mediaType,omitempty"`  // for image content
+	DataBase64 string `json:"dataBase64,omitempty"` // for image content
+}
 
 // Common request structures
 type inboundMessage struct {
@@ -69,4 +79,34 @@ func validateAPIKey(w http.ResponseWriter, r *http.Request) (string, bool) {
 		return "", false
 	}
 	return apiKey, true
+}
+
+const maxImageSize = 5 * 1024 * 1024 // 5MB per image
+
+// validateImageContent validates image content blocks
+func validateImageContent(content inboundContent) error {
+	// Validate media type
+	switch content.MediaType {
+	case "image/jpeg", "image/png", "image/webp", "image/gif":
+		// Valid types
+	default:
+		return fmt.Errorf("unsupported image media type: %s", content.MediaType)
+	}
+
+	// Validate and decode base64 data
+	if content.DataBase64 == "" {
+		return fmt.Errorf("missing image data")
+	}
+
+	data, err := base64.StdEncoding.DecodeString(content.DataBase64)
+	if err != nil {
+		return fmt.Errorf("invalid base64 image data: %v", err)
+	}
+
+	// Validate size
+	if len(data) > maxImageSize {
+		return fmt.Errorf("image too large: %d bytes (max %d bytes)", len(data), maxImageSize)
+	}
+
+	return nil
 }

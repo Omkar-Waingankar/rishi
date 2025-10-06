@@ -1,10 +1,11 @@
-package api
+package handlers
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
 
+	rishiTools "github.com/Omkar-Waingankar/rishi/daemon/internal/tools"
 	"github.com/rs/zerolog/log"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
@@ -12,7 +13,7 @@ import (
 
 // handleOpenAIChat proxies a streaming request with history to OpenAI and emits NDJSON lines
 // of the form {"text": "..."} and a final {"is_final": true}.
-func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) {
+func HandleOpenAIChat(w http.ResponseWriter, r *http.Request) {
 	if !validateChatRequest(w, r) {
 		return
 	}
@@ -375,16 +376,16 @@ func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) 
 
 			switch toolCall.Function.Name {
 			case "r_help":
-				var input rHelpInput
+				var input rishiTools.RHelpInput
 				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input); err != nil {
 					errMsg := fmt.Sprintf("Failed to parse r_help input: %s, error: %v", toolCall.Function.Arguments, err)
 					log.Error().Err(err).Msgf(errMsg)
-					response = rHelpOutput{
+					response = rishiTools.RHelpOutput{
 						Error: errMsg,
 					}
 				} else {
 					streamToolCallStart(w, flusher, "r_help", input)
-					response = rHelp(input)
+					response = rishiTools.RHelp(input)
 				}
 
 				b, err := json.Marshal(response)
@@ -402,16 +403,16 @@ func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) 
 				})
 
 			case "console_exec":
-				var input consoleExecInput
+				var input rishiTools.ConsoleExecInput
 				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input); err != nil {
 					errMsg := fmt.Sprintf("Failed to parse console exec input: %s, error: %v", toolCall.Function.Arguments, err)
 					log.Error().Err(err).Msgf(errMsg)
-					response = consoleExecOutput{
+					response = rishiTools.ConsoleExecOutput{
 						Error: errMsg,
 					}
 				} else {
 					streamToolCallStart(w, flusher, "console_exec", input)
-					response = consoleExec(input)
+					response = rishiTools.ConsoleExec(input)
 				}
 
 				b, err := json.Marshal(response)
@@ -429,16 +430,16 @@ func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) 
 				})
 
 			case "text_editor_view":
-				var input textEditorViewInput
+				var input rishiTools.TextEditorViewInput
 				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input); err != nil {
 					errMsg := fmt.Sprintf("Failed to parse text editor view input: %s, error: %v", toolCall.Function.Arguments, err)
 					log.Error().Err(err).Msgf(errMsg)
-					response = textEditorViewOutput{
+					response = rishiTools.TextEditorViewOutput{
 						Error: errMsg,
 					}
 				} else {
 					streamToolCallStart(w, flusher, "view", input)
-					response = textEditorView(input)
+					response = rishiTools.TextEditorView(input)
 				}
 
 				b, err := json.Marshal(response)
@@ -456,16 +457,16 @@ func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) 
 				})
 
 			case "text_editor_str_replace":
-				var input textEditorStrReplaceInput
+				var input rishiTools.TextEditorStrReplaceInput
 				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input); err != nil {
 					errMsg := fmt.Sprintf("Failed to parse text editor str_replace input: %s, error: %v", toolCall.Function.Arguments, err)
 					log.Error().Err(err).Msgf(errMsg)
-					response = textEditorStrReplaceOutput{
+					response = rishiTools.TextEditorStrReplaceOutput{
 						Error: errMsg,
 					}
 				} else {
 					streamToolCallStart(w, flusher, "str_replace", input)
-					response = textEditorStrReplace(input)
+					response = rishiTools.TextEditorStrReplace(input)
 				}
 
 				b, err := json.Marshal(response)
@@ -483,16 +484,16 @@ func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) 
 				})
 
 			case "text_editor_create":
-				var input textEditorCreateInput
+				var input rishiTools.TextEditorCreateInput
 				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input); err != nil {
 					errMsg := fmt.Sprintf("Failed to parse text editor create input: %s, error: %v", toolCall.Function.Arguments, err)
 					log.Error().Err(err).Msgf(errMsg)
-					response = textEditorCreateOutput{
+					response = rishiTools.TextEditorCreateOutput{
 						Error: errMsg,
 					}
 				} else {
 					streamToolCallStart(w, flusher, "create", input)
-					response = textEditorCreate(input)
+					response = rishiTools.TextEditorCreate(input)
 				}
 
 				b, err := json.Marshal(response)
@@ -510,16 +511,16 @@ func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) 
 				})
 
 			case "text_editor_insert":
-				var input textEditorInsertInput
+				var input rishiTools.TextEditorInsertInput
 				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input); err != nil {
 					errMsg := fmt.Sprintf("Failed to parse text editor insert input: %s, error: %v", toolCall.Function.Arguments, err)
 					log.Error().Err(err).Msgf(errMsg)
-					response = textEditorInsertOutput{
+					response = rishiTools.TextEditorInsertOutput{
 						Error: errMsg,
 					}
 				} else {
 					streamToolCallStart(w, flusher, "insert", input)
-					response = textEditorInsert(input)
+					response = rishiTools.TextEditorInsert(input)
 				}
 
 				b, err := json.Marshal(response)
@@ -546,4 +547,38 @@ func (s *ServerClient) handleOpenAIChat(w http.ResponseWriter, r *http.Request) 
 		// Add all tool results to messages
 		messages = append(messages, toolMessages...)
 	}
+}
+
+// convertToOpenAIContentParts converts inbound content to OpenAI message parts
+func convertToOpenAIContentParts(contents []inboundContent) ([]openai.ChatMessagePart, error) {
+	var parts []openai.ChatMessagePart
+
+	for _, content := range contents {
+		switch content.Type {
+		case "text":
+			if content.Content != "" {
+				parts = append(parts, openai.ChatMessagePart{
+					Type: openai.ChatMessagePartTypeText,
+					Text: content.Content,
+				})
+			}
+		case "image":
+			if err := validateImageContent(content); err != nil {
+				return nil, fmt.Errorf("invalid image content: %v", err)
+			}
+
+			// OpenAI expects data URI format for base64 images
+			dataURI := fmt.Sprintf("data:%s;base64,%s", content.MediaType, content.DataBase64)
+			parts = append(parts, openai.ChatMessagePart{
+				Type: openai.ChatMessagePartTypeImageURL,
+				ImageURL: &openai.ChatMessageImageURL{
+					URL: dataURI,
+				},
+			})
+		default:
+			log.Warn().Msgf("Unknown content type: %s", content.Type)
+		}
+	}
+
+	return parts, nil
 }

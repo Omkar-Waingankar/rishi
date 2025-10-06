@@ -1,15 +1,13 @@
-package api
+package handlers
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
+	rishiTools "github.com/Omkar-Waingankar/rishi/daemon/internal/tools"
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/invopop/jsonschema"
-	"github.com/rs/zerolog/log"
-	"github.com/sashabaranov/go-openai"
 )
 
 func GenerateSchema[T any]() anthropic.ToolInputSchemaParam {
@@ -52,82 +50,20 @@ func streamToolCallComplete(w http.ResponseWriter, flusher http.Flusher, name st
 
 	// Check if result has an error field so we can show the error in the frontend
 	switch r := result.(type) {
-	case textEditorViewOutput:
+	case rishiTools.TextEditorViewOutput:
 		return r.Error != ""
-	case textEditorStrReplaceOutput:
+	case rishiTools.TextEditorStrReplaceOutput:
 		return r.Error != ""
-	case textEditorCreateOutput:
+	case rishiTools.TextEditorCreateOutput:
 		return r.Error != ""
-	case textEditorInsertOutput:
+	case rishiTools.TextEditorInsertOutput:
 		return r.Error != ""
-	case consoleExecOutput:
+	case rishiTools.ConsoleExecOutput:
 		return r.Error != ""
-	case rHelpOutput:
+	case rishiTools.RHelpOutput:
 		return r.Error != ""
 	}
 	return false
-}
-
-// inboundContent defines content types for inbound messages
-type inboundContent struct {
-	Type       string `json:"type"`                 // "text" | "image"
-	Content    string `json:"content,omitempty"`    // for text content
-	MediaType  string `json:"mediaType,omitempty"`  // for image content
-	DataBase64 string `json:"dataBase64,omitempty"` // for image content
-}
-
-const maxImageSize = 5 * 1024 * 1024 // 5MB per image
-
-// validateImageContent validates image content blocks
-func validateImageContent(content inboundContent) error {
-	// Validate media type
-	switch content.MediaType {
-	case "image/jpeg", "image/png", "image/webp", "image/gif":
-		// Valid types
-	default:
-		return fmt.Errorf("unsupported image media type: %s", content.MediaType)
-	}
-
-	// Validate and decode base64 data
-	if content.DataBase64 == "" {
-		return fmt.Errorf("missing image data")
-	}
-
-	data, err := base64.StdEncoding.DecodeString(content.DataBase64)
-	if err != nil {
-		return fmt.Errorf("invalid base64 image data: %v", err)
-	}
-
-	// Validate size
-	if len(data) > maxImageSize {
-		return fmt.Errorf("image too large: %d bytes (max %d bytes)", len(data), maxImageSize)
-	}
-
-	return nil
-}
-
-// convertToAnthropicContent converts inbound content to Anthropic content blocks
-func convertToAnthropicContent(contents []inboundContent) ([]anthropic.ContentBlockParamUnion, error) {
-	var blocks []anthropic.ContentBlockParamUnion
-
-	for _, content := range contents {
-		switch content.Type {
-		case "text":
-			if content.Content != "" {
-				blocks = append(blocks, anthropic.NewTextBlock(content.Content))
-			}
-		case "image":
-			if err := validateImageContent(content); err != nil {
-				return nil, fmt.Errorf("invalid image content: %v", err)
-			}
-
-			blocks = append(blocks, anthropic.NewImageBlockBase64(content.MediaType, content.DataBase64))
-		default:
-			log.Warn().Msgf("Unknown content type: %s", content.Type)
-		}
-	}
-
-	return blocks, nil
 }
 
 // formatMessageContentForDebug formats message content for debug logging
@@ -182,40 +118,6 @@ func formatMessageContentArrayForDebug(contents []inboundContent) string {
 	}
 
 	return fmt.Sprintf("[%s]", joinStrings(parts, ", "))
-}
-
-// convertToOpenAIContentParts converts inbound content to OpenAI message parts
-func convertToOpenAIContentParts(contents []inboundContent) ([]openai.ChatMessagePart, error) {
-	var parts []openai.ChatMessagePart
-
-	for _, content := range contents {
-		switch content.Type {
-		case "text":
-			if content.Content != "" {
-				parts = append(parts, openai.ChatMessagePart{
-					Type: openai.ChatMessagePartTypeText,
-					Text: content.Content,
-				})
-			}
-		case "image":
-			if err := validateImageContent(content); err != nil {
-				return nil, fmt.Errorf("invalid image content: %v", err)
-			}
-
-			// OpenAI expects data URI format for base64 images
-			dataURI := fmt.Sprintf("data:%s;base64,%s", content.MediaType, content.DataBase64)
-			parts = append(parts, openai.ChatMessagePart{
-				Type: openai.ChatMessagePartTypeImageURL,
-				ImageURL: &openai.ChatMessageImageURL{
-					URL: dataURI,
-				},
-			})
-		default:
-			log.Warn().Msgf("Unknown content type: %s", content.Type)
-		}
-	}
-
-	return parts, nil
 }
 
 // joinStrings is a simple helper to join strings with a separator

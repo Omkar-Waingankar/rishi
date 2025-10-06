@@ -1,20 +1,9 @@
-package api
+package tools
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"time"
 
 	"github.com/rs/zerolog/log"
-)
-
-const (
-	// R tool server configuration
-	rToolServerPort    = "8082"
-	rToolServerTimeout = 30 * time.Second
 )
 
 // TextEditorCommand represents the available commands for the text editor tool
@@ -31,7 +20,7 @@ const (
 	InsertCommand TextEditorCommand = "insert"
 )
 
-type textEditorInput struct {
+type TextEditorInput struct {
 	Command TextEditorCommand `json:"command"`
 
 	// Common fields
@@ -54,96 +43,55 @@ type textEditorInput struct {
 	InsertText string `json:"insert_text"` // Actual field name Anthropic sends (despite docs)
 }
 
-type textEditorViewInput struct {
+type TextEditorViewInput struct {
 	Path      string `json:"path"`
 	ViewRange []int  `json:"view_range,omitempty"`
 }
 
-type textEditorViewOutput struct {
+type TextEditorViewOutput struct {
 	Content string `json:"content"`
 	Error   string `json:"error"`
 }
 
-type textEditorStrReplaceInput struct {
+type TextEditorStrReplaceInput struct {
 	Path   string `json:"path"`
 	OldStr string `json:"old_str"`
 	NewStr string `json:"new_str"`
 }
 
-type textEditorStrReplaceOutput struct {
+type TextEditorStrReplaceOutput struct {
 	Content string `json:"content"`
 	Error   string `json:"error"`
 }
 
-type textEditorCreateInput struct {
+type TextEditorCreateInput struct {
 	Path     string `json:"path"`
 	FileText string `json:"file_text"`
 }
 
-type textEditorCreateOutput struct {
+type TextEditorCreateOutput struct {
 	Content string `json:"content"`
 	Error   string `json:"error"`
 }
 
-type textEditorInsertInput struct {
+type TextEditorInsertInput struct {
 	Path       string `json:"path"`
 	InsertLine int    `json:"insert_line"`
 	NewStr     string `json:"new_str"`
 }
 
-type textEditorInsertOutput struct {
+type TextEditorInsertOutput struct {
 	Content string `json:"content"`
 	Error   string `json:"error"`
 }
 
-// HTTP client for R tool server
-var toolClient = &http.Client{
-	Timeout: rToolServerTimeout,
-}
-
-// makeToolRequest makes an HTTP POST request to the R tool server
-func makeToolRequest(endpoint string, payload interface{}, response interface{}) error {
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("failed to marshal payload: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:%s%s", rToolServerPort, endpoint), bytes.NewBuffer(jsonData))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := toolClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("HTTP request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(body))
-	}
-
-	if err := json.Unmarshal(body, response); err != nil {
-		return fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	return nil
-}
-
-func textEditorView(input textEditorViewInput) textEditorViewOutput {
-	var output textEditorViewOutput
+func TextEditorView(input TextEditorViewInput) TextEditorViewOutput {
+	var output TextEditorViewOutput
 
 	err := makeToolRequest("/text_editor/view", input, &output)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to call text editor view endpoint")
-		return textEditorViewOutput{
+		return TextEditorViewOutput{
 			Error: fmt.Sprintf("Failed to communicate with R server: %v", err),
 		}
 	}
@@ -151,13 +99,13 @@ func textEditorView(input textEditorViewInput) textEditorViewOutput {
 	return output
 }
 
-func textEditorStrReplace(input textEditorStrReplaceInput) textEditorStrReplaceOutput {
-	var output textEditorStrReplaceOutput
+func TextEditorStrReplace(input TextEditorStrReplaceInput) TextEditorStrReplaceOutput {
+	var output TextEditorStrReplaceOutput
 
 	err := makeToolRequest("/text_editor/str_replace", input, &output)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to call text editor str_replace endpoint")
-		return textEditorStrReplaceOutput{
+		return TextEditorStrReplaceOutput{
 			Error: fmt.Sprintf("Failed to communicate with R server: %v", err),
 		}
 	}
@@ -165,13 +113,13 @@ func textEditorStrReplace(input textEditorStrReplaceInput) textEditorStrReplaceO
 	return output
 }
 
-func textEditorCreate(input textEditorCreateInput) textEditorCreateOutput {
-	var output textEditorCreateOutput
+func TextEditorCreate(input TextEditorCreateInput) TextEditorCreateOutput {
+	var output TextEditorCreateOutput
 
 	err := makeToolRequest("/text_editor/create", input, &output)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to call text editor create endpoint")
-		return textEditorCreateOutput{
+		return TextEditorCreateOutput{
 			Error: fmt.Sprintf("Failed to communicate with R server: %v", err),
 		}
 	}
@@ -179,13 +127,13 @@ func textEditorCreate(input textEditorCreateInput) textEditorCreateOutput {
 	return output
 }
 
-func textEditorInsert(input textEditorInsertInput) textEditorInsertOutput {
-	var output textEditorInsertOutput
+func TextEditorInsert(input TextEditorInsertInput) TextEditorInsertOutput {
+	var output TextEditorInsertOutput
 
 	err := makeToolRequest("/text_editor/insert", input, &output)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to call text editor insert endpoint")
-		return textEditorInsertOutput{
+		return TextEditorInsertOutput{
 			Error: fmt.Sprintf("Failed to communicate with R server: %v", err),
 		}
 	}

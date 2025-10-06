@@ -1,4 +1,4 @@
-package api
+package tools
 
 import (
 	"fmt"
@@ -6,23 +6,23 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type rHelpInput struct {
+type RHelpInput struct {
 	Package string  `json:"package"`
 	Topic   *string `json:"topic,omitempty"`
 }
 
-type rHelpOutput struct {
+type RHelpOutput struct {
 	Content string `json:"content"`
 	Error   string `json:"error"`
 }
 
-func rHelp(input rHelpInput) rHelpOutput {
-	var output rHelpOutput
+func RHelp(input RHelpInput) RHelpOutput {
+	var output RHelpOutput
 
 	err := makeToolRequest("/r_help", input, &output)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to call r_help endpoint")
-		return rHelpOutput{
+		return RHelpOutput{
 			Error: fmt.Sprintf("Failed to communicate with R server: %v", err),
 		}
 	}

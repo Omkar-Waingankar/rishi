@@ -1,4 +1,4 @@
-package api
+package handlers
 
 const RISHI_SYSTEM_PROMPT = `You are a powerful agentic AI coding assistant, powered by a cutting-edge LLM. You operate exclusively in Rishi, the world's best add-in for agentic coding with RStudio.
 

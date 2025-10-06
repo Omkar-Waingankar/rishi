@@ -1,4 +1,4 @@
-module github.com/halliday/rishi/daemon
+module github.com/Omkar-Waingankar/rishi/daemon
 
 go 1.23.1
 
@@ -6,8 +6,6 @@ require (
 	github.com/anthropics/anthropic-sdk-go v1.13.0
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/invopop/jsonschema v0.13.0
-	github.com/joho/godotenv v1.5.1
-	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/rs/zerolog v1.34.0
 	github.com/sashabaranov/go-openai v1.41.2
 )
