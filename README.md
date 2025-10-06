@@ -7,7 +7,7 @@
 - **Privacy-first:** runs locally, your messages/code/data stay on your machine
 - **Transparent:** fully open-source and auditable, control your own API keys
 
-Works seamlessly as a RStudio Addin. Watch the demo video at tryrishi.com.
+Works seamlessly as a RStudio Addin. Watch the demo video [here](https://tryrishi.com).
 
 <table>
   <tr>
