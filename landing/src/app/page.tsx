@@ -83,14 +83,16 @@ export default function Home() {
             Works seamlessly as a RStudio Addin.
           </p>
 
-          {/* Screenshot */}
+          {/* Demo Video */}
           <div className="mb-8 flex justify-center">
-            <img
-              src="/rishiscreenshot.jpg"
-              alt="Screenshot of Rishi in action"
+            <video
+              src="https://v8smvj8yqcz9aedn.public.blob.vercel-storage.com/rishi_demo.mp4"
+              controls
               className="rounded-md shadow border border-stone-200 max-w-full"
-              style={{ maxHeight: 400 }}
-            />
+              style={{ maxHeight: 500 }}
+            >
+              Your browser does not support the video tag.
+            </video>
           </div>
 
           {/* How do I get started? */}
