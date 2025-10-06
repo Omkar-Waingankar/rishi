@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import anthropicLogo from './anthropiclogo.png';
+import openaiLogo from './openailogo.png';
 
 interface ApiKeySetupProps {
   onApiKeySubmit: (apiKey: string) => Promise<void>;
@@ -81,41 +83,44 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySubmit, selectedProvi
 
   return (
     <div className="api-key-setup">
-      <h3>Welcome to Rishi</h3>
-      <p>To get started, please select a provider and enter your API key.</p>
+      <div className="api-key-setup-content">
+        <h3>Welcome to Rishi</h3>
+        <p>To get started, please select a provider and enter your API key.</p>
 
-      <div className="provider-selection">
-        <label>
-          <input
-            type="radio"
-            value="anthropic"
-            checked={selectedProvider === 'anthropic'}
-            onChange={(e) => onProviderChange(e.target.value)}
-          />
-          Anthropic (Claude)
-        </label>
-        <label>
-          <input
-            type="radio"
-            value="openai"
-            checked={selectedProvider === 'openai'}
-            onChange={(e) => onProviderChange(e.target.value)}
-          />
-          OpenAI (GPT)
-        </label>
-      </div>
+        <div className="provider-selection">
+          <button
+            type="button"
+            className={`provider-option ${selectedProvider === 'anthropic' ? 'selected' : ''}`}
+            onClick={() => onProviderChange('anthropic')}
+          >
+            <div className="provider-content">
+              <div className="provider-logo">
+                <img src={anthropicLogo} alt="Anthropic" />
+              </div>
+              <div className="provider-name">Anthropic</div>
+            </div>
+          </button>
+          <button
+            type="button"
+            className={`provider-option ${selectedProvider === 'openai' ? 'selected' : ''}`}
+            onClick={() => onProviderChange('openai')}
+          >
+            <div className="provider-content">
+              <div className="provider-logo">
+                <img src={openaiLogo} alt="OpenAI" />
+              </div>
+              <div className="provider-name">OpenAI</div>
+            </div>
+          </button>
+        </div>
 
-      <p>
-        {selectedProvider === 'anthropic' ? (
-          <>Don't have an Anthropic API key? <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">Get one here</a></>
-        ) : (
-          <>Don't have an OpenAI API key? <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">Get one here</a></>
-        )}
-      </p>
-
-      <p className="onboarding-note">
-        <em>You can add other providers later in settings. For now, just choose one to get started.</em>
-      </p>
+        <p className="api-key-link">
+          {selectedProvider === 'anthropic' ? (
+            <>Don't have an Anthropic API key? <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">Get one here</a></>
+          ) : (
+            <>Don't have an OpenAI API key? <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">Get one here</a></>
+          )}
+        </p>
 
       <form onSubmit={handleSubmit}>
         <div className="api-key-input-wrapper">
@@ -161,7 +166,7 @@ const ApiKeySetup: React.FC<ApiKeySetupProps> = ({ onApiKeySubmit, selectedProvi
           </div>
         )}
       </form>
-
+      </div>
     </div>
   );
 };

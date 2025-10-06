@@ -39,3 +39,13 @@ text_editor_insert_tool_result <- function(content = "", error = "") {
   stopifnot(is.character(content), is.character(error))
   list(content = jsonlite::unbox(content), error = jsonlite::unbox(error))
 }
+
+#' Create an r_help tool result response
+#'
+#' @param content Character string with result content
+#' @param error Character string with error message (empty if no error)
+#' @return List with content and error fields
+r_help_tool_result <- function(content = "", error = "") {
+  stopifnot(is.character(content), is.character(error))
+  list(content = jsonlite::unbox(content), error = jsonlite::unbox(error))
+}

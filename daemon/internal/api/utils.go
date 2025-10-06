@@ -59,6 +59,10 @@ func streamToolCallComplete(w http.ResponseWriter, flusher http.Flusher, name st
 		return r.Error != ""
 	case textEditorInsertOutput:
 		return r.Error != ""
+	case consoleExecOutput:
+		return r.Error != ""
+	case rHelpOutput:
+		return r.Error != ""
 	}
 	return false
 }

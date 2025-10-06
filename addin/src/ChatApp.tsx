@@ -13,7 +13,8 @@ import {
   StrReplaceToolInput,
   CreateToolInput,
   InsertToolInput,
-  ConsoleExecToolInput
+  ConsoleExecToolInput,
+  RHelpToolInput
 } from './tool_types';
 
 const getToolCallText = (toolCall: { name: string; status: string; input?: object }) => {
@@ -80,6 +81,16 @@ const getToolCallText = (toolCall: { name: string; status: string; input?: objec
         return `Failed to write to console`;
       } else {
         return `Wrote to console`;
+      }
+    }
+
+    case ToolCommand.R_HELP: {
+      if (toolCall.status === 'requesting') {
+        return `Checking R docs`;
+      } else if (toolCall.status === 'failed') {
+        return `Failed to check R docs`;
+      } else {
+        return `Checked R docs`;
       }
     }
 
@@ -331,7 +342,7 @@ const ChatApp: React.FC = () => {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          message: content,
+          content: content,
           history: conversationHistory
         }),
         signal: abortControllerRef.current.signal
@@ -400,22 +411,18 @@ const ChatApp: React.FC = () => {
             } else if (data.tool_call) {
               if (data.tool_call.status === 'requesting') {
                 assistantContent.push({
-                  type: 'tool_call', 
+                  type: 'tool_call',
                   content: getToolCallText(data.tool_call),
                   toolCall: data.tool_call
                 });
               } else if (data.tool_call.status === 'completed') {
-                // Check if the tool call actually failed by parsing the result
+                // Log the full tool call result for debugging
+                console.log(`[Tool Call Complete] ${data.tool_call.name}:`, data.tool_call.result);
+
+                // Check if the tool call actually failed by checking the error field
                 let actualStatus = 'completed';
-                if (data.tool_call.result) {
-                  try {
-                    const resultObj = JSON.parse(data.tool_call.result);
-                    if (resultObj.error) {
-                      actualStatus = 'failed';
-                    }
-                  } catch {
-                    // If result isn't JSON, assume success
-                  }
+                if (data.tool_call.result && data.tool_call.result.error && data.tool_call.result.error !== "") {
+                  actualStatus = 'failed';
                 }
 
                 // Update the last tool call in content

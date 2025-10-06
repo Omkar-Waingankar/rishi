@@ -135,6 +135,15 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 
 	tools = append(tools, anthropic.ToolUnionParam{OfTool: &consoleExecTool})
 
+	// Add R help tool
+	rHelpTool := anthropic.ToolParam{
+		Name:        "r_help",
+		Description: anthropic.String("Retrieves R package documentation by calling help(package=\"<package>\"). Use this to look up package-level documentation when writing R code or answering questions about R packages and their functionality.\n\nParameters:\n- package (required): The name of the R package to get documentation for (e.g., 'dplyr', 'ggplot2', 'base')."),
+		InputSchema: GenerateSchema[rHelpInput](),
+	}
+
+	tools = append(tools, anthropic.ToolUnionParam{OfTool: &rHelpTool})
+
 	for {
 		stream := anthropicClient.Messages.NewStreaming(r.Context(), anthropic.MessageNewParams{
 			Model:       model,
@@ -182,6 +191,20 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 
 				var response interface{}
 				switch block.Name {
+				case "r_help":
+					var input rHelpInput
+					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
+						errMsg := fmt.Sprintf("Failed to parse r_help input: %s, error: %v", variant.JSON.Input.Raw(), err)
+						log.Error().Err(err).Msgf(errMsg)
+						response = rHelpOutput{
+							Error: errMsg,
+						}
+						break
+					}
+
+					streamToolCallStart(w, flusher, "r_help", input)
+					response = rHelp(input)
+
 				case "console_exec":
 					var input consoleExecInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
@@ -268,6 +291,13 @@ func (s *ServerClient) handleAnthropicChat(w http.ResponseWriter, r *http.Reques
 
 				// Stream tool call completion event to frontend
 				switch block.Name {
+				case "r_help":
+					var input rHelpInput
+					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
+						log.Error().Err(err).Msgf("Failed to parse r_help input for completion event")
+					}
+
+					isError = streamToolCallComplete(w, flusher, "r_help", input, response)
 				case "console_exec":
 					var input consoleExecInput
 					if err := json.Unmarshal([]byte(variant.JSON.Input.Raw()), &input); err != nil {
