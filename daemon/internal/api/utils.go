@@ -9,6 +9,7 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/invopop/jsonschema"
 	"github.com/rs/zerolog/log"
+	"github.com/sashabaranov/go-openai"
 )
 
 func GenerateSchema[T any]() anthropic.ToolInputSchemaParam {
@@ -183,26 +184,38 @@ func formatMessageContentArrayForDebug(contents []inboundContent) string {
 	return fmt.Sprintf("[%s]", joinStrings(parts, ", "))
 }
 
-// convertToOpenaiContent converts a content array to a string for OpenAI
-func convertToOpenaiContent(contents []inboundContent) string {
-	var textContent string
+// convertToOpenAIContentParts converts inbound content to OpenAI message parts
+func convertToOpenAIContentParts(contents []inboundContent) ([]openai.ChatMessagePart, error) {
+	var parts []openai.ChatMessagePart
 
 	for _, content := range contents {
 		switch content.Type {
 		case "text":
 			if content.Content != "" {
-				textContent += content.Content
+				parts = append(parts, openai.ChatMessagePart{
+					Type: openai.ChatMessagePartTypeText,
+					Text: content.Content,
+				})
 			}
 		case "image":
-			// For images, we can't easily convert to text, so we'll skip them for now
-			// OpenAI doesn't support image content blocks in the same way as Anthropic
-			log.Warn().Msgf("Skipping image content in OpenAI message conversion")
+			if err := validateImageContent(content); err != nil {
+				return nil, fmt.Errorf("invalid image content: %v", err)
+			}
+
+			// OpenAI expects data URI format for base64 images
+			dataURI := fmt.Sprintf("data:%s;base64,%s", content.MediaType, content.DataBase64)
+			parts = append(parts, openai.ChatMessagePart{
+				Type: openai.ChatMessagePartTypeImageURL,
+				ImageURL: &openai.ChatMessageImageURL{
+					URL: dataURI,
+				},
+			})
 		default:
-			log.Warn().Msgf("Unknown content type in OpenAI message conversion: %s", content.Type)
+			log.Warn().Msgf("Unknown content type: %s", content.Type)
 		}
 	}
 
-	return textContent
+	return parts, nil
 }
 
 // joinStrings is a simple helper to join strings with a separator

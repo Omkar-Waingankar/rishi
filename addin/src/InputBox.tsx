@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { InputBoxProps, ImageMimeType, MessageContent, ContextState, ActiveTabResponse, PlotResponse } from './types';
 import ModelDropdown from './ModelDropdown';
-import { Send, Image } from '@mui/icons-material';
+import { Send, Image, Stop } from '@mui/icons-material';
 
 interface DropdownOption {
   value: string;
@@ -348,11 +348,14 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
     };
   }, [showContextDropdown]);
 
-  // Default to first available (non-disabled) model when API key status changes
+  // Default to first available (non-disabled) model only on initial load
   React.useEffect(() => {
-    const firstAvailableModel = modelOptions.find(option => !option.disabled);
-    if (firstAvailableModel && firstAvailableModel.value !== selectedModel) {
-      setSelectedModel(firstAvailableModel.value);
+    // Only set default model if no model is currently selected
+    if (!selectedModel && apiKeyStatus) {
+      const firstAvailableModel = modelOptions.find(option => !option.disabled);
+      if (firstAvailableModel) {
+        setSelectedModel(firstAvailableModel.value);
+      }
     }
   }, [apiKeyStatus]);
 
@@ -537,7 +540,7 @@ const InputBox: React.FC<InputBoxProps> = ({ onSendMessage, disabled, isStreamin
                   className="send-button stop-button"
                   aria-label="Stop streaming"
                 >
-                  <Send className="send-icon" sx={{ fontSize: 12 }} />
+                  <Stop className="send-icon" sx={{ fontSize: 12 }} />
                 </button>
               ) : (
                 <button

@@ -18,8 +18,18 @@ get_active_tab_context <- function() {
     # Extract filename from path
     filename <- basename(doc_context$path)
     
-    # Get document contents
-    contents <- if (is.null(doc_context$contents)) "" else paste(doc_context$contents, collapse = "\n")
+    # Get document contents with line numbers
+    if (is.null(doc_context$contents)) {
+      contents <- ""
+    } else {
+      lines <- doc_context$contents
+      # Build result with line numbers
+      contents <- paste0("File contents for '", filename, "':\n")
+      
+      for (i in seq_along(lines)) {
+        contents <- paste0(contents, i, ": ", lines[i], "\n")
+      }
+    }
     
     return(list(
       filename = jsonlite::unbox(filename),
