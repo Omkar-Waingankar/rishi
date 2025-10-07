@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MessageListProps, Message } from './types';
-import { ContentCopy, ThumbUp, ThumbDown, Close, Edit, Add, Terminal } from '@mui/icons-material';
+import { ContentCopy, Close, Edit, Add, Terminal } from '@mui/icons-material';
 import { RHelpToolInput } from './tool_types';
 
 const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
@@ -310,25 +310,13 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
             </div>
             {showFooter && (
               <div className="message-actions" role="toolbar" aria-label="Message actions">
-                <button 
+                <button
                   className="action-button copy-button"
                   onClick={() => copyToClipboard(buildCopyText(message.content))}
                   aria-label="Copy message"
                 >
                   <ContentCopy className="action-icon" sx={{ fontSize: 14 }} />
                   Copy
-                </button>
-                <button 
-                  className="action-button thumb-button"
-                  aria-label="Like message"
-                >
-                  <ThumbUp className="action-icon" sx={{ fontSize: 14 }} />
-                </button>
-                <button 
-                  className="action-button thumb-button"
-                  aria-label="Dislike message"
-                >
-                  <ThumbDown className="action-icon" sx={{ fontSize: 14 }} />
                 </button>
               </div>
             )}

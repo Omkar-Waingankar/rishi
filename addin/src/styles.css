@@ -377,7 +377,7 @@
 
 /* Tool Call Box - Cursor-style design */
 .tool-call-box {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 8px;
   background-color: rgba(0, 0, 0, 0.02);
