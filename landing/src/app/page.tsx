@@ -11,7 +11,7 @@ export default function Home() {
         </a>
         <div className="flex items-center gap-1">
           <a
-            href="/getting-started"
+            href="/usage-guide"
             className="h-[2em] px-2 hover:bg-stone-200 hover:rounded-md flex items-center"
           >
             <svg
