@@ -110,7 +110,7 @@ export default function Home() {
           {/* Demo Video */}
           <div className="mb-8 flex justify-center">
             <video
-              src="https://v8smvj8yqcz9aedn.public.blob.vercel-storage.com/rishi_demo.mp4"
+              src="https://pub-21dd5a46fa1f46798859612fa3cf3a8a.r2.dev/rishi_demo.mp4"
               controls
               className="rounded-md shadow border border-stone-200 max-w-full"
               style={{ maxHeight: 500 }}
